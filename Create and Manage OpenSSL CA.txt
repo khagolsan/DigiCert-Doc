@@ -1,0 +1,1398 @@
+# Creating a Digital Certificate Certifying Authority (CA)
+#
+#
+#
+
+
+1. To create a private root key for the root CA.
+------------------------------------------------------------
+
+# Working dir '/home/san/TEST-CA/CA-DIR/'
+
+------------------------------------------------------------
+[san@sandell CA-DIR]$ pwd
+/home/san/TEST-CA/CA-DIR
+[san@sandell CA-DIR]$ ll
+total 20
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 certreqs
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 certsdb
+drwxrwxr-x. 2 san san 4096 Feb  3 12:21 conf
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 crl
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 private
+
+
+
+-------------------------------------------------
+# The config file '/home/san/TEST-CA/CA-DIR/conf/openssl_noprompt_client.cnf'.
+-------------------------------------------------
+#
+# OpenSSL configuration file.
+#
+
+# Establish working directory.
+
+dir                                     = /home/san/TEST-CA/CA-DIR/
+
+[ ca ]
+default_ca                              = CA_default
+
+[ CA_default ]
+serial                                  = $dir/serial
+database                                = $dir/certindex.txt
+certs					= $dir/certsdb
+new_certs_dir                           = $certs
+certificate                             = $dir/cacert.pem
+private_key                             = $dir/private/cakey.pem
+default_days                            = 365
+default_md                              = sha1
+preserve                                = no
+email_in_dn                             = yes
+nameopt                                 = default_ca
+certopt                                 = default_ca
+policy                                  = policy_match
+
+[ policy_match ]
+countryName                             = match
+stateOrProvinceName                     = match
+organizationName                        = match
+organizationalUnitName                  = optional
+commonName                              = supplied
+emailAddress                            = optional
+
+[ req ]
+default_bits                            = 2048                  # Size of keys
+default_keyfile                         = key.pem               # name of generated keys
+default_md                              = sha256                          # message digest algorithm
+string_mask                             = nombstr               # permitted characters
+distinguished_name                      = req_distinguished_name
+req_extensions                          = v3_req
+prompt					= no			# Added by user
+
+
+[ req_distinguished_name ]
+ C                      = IN
+ ST                     = MAHARASHTRA
+ L                      = MUMBAI
+ O                      = DEMO INC. LTD
+ OU                     = _ORG_UNIT
+ CN                     = _COMMON_NAME
+ emailAddress           = _E_MAIL
+
+[ v3_ca ]
+basicConstraints                        = CA:TRUE
+subjectKeyIdentifier                    = hash
+authorityKeyIdentifier                  = keyid:always,issuer:always
+
+[ v3_req ]
+basicConstraints                        = CA:FALSE
+subjectKeyIdentifier                    = hash
+
+-------------------------------------------------
+
+[san@sandell CA-DIR]$ touch certindex.txt
+[san@sandell CA-DIR]$ echo "00000001" > ./serial
+[san@sandell CA-DIR]$ chmod -R 700 ./certsdb/ ./private/
+[san@sandell CA-DIR]$ ll
+total 24
+-rw-rw-r--. 1 san san    0 Feb  3 12:34 certindex.txt
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 certreqs
+drwx------. 2 san san 4096 Feb  3 11:20 certsdb
+drwxrwxr-x. 2 san san 4096 Feb  3 12:21 conf
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 crl
+drwx------. 2 san san 4096 Feb  3 12:37 private
+-rw-rw-r--. 1 san san    9 Feb  3 12:35 serial
+[san@sandell CA-DIR]$
+
+--------------------------------------------------
+# To display the content of file ./serial
+--------------------------------------------------
+
+[san@sandell CA-DIR]$ cat serial 
+00000001
+
+--------------------------------------------------
+# To create private key for CA, passphrase is set to 'DEMOCA'
+--------------------------------------------------
+
+[san@sandell CA-DIR]$ openssl genrsa -des3 -out ./private/rootCA.key 2048 
+Generating RSA private key, 2048 bit long modulus
+............................................................................................................................................+++
+.......+++
+e is 65537 (0x10001)
+Enter pass phrase for ./private/rootCA.key:
+Verifying - Enter pass phrase for ./private/rootCA.key:
+[san@sandell CA-DIR]$ ll ./private/rootCA.key 
+-rw-rw-r--. 1 san san 1751 Feb  3 12:37 ./private/rootCA.key
+[san@sandell CA-DIR]$ 
+
+---------------------------------------------------
+# Displaying the details of private key in text format
+---------------------------------------------------
+
+[san@sandell CA-DIR]$ openssl pkey -in ./private/rootCA.key -text
+Enter pass phrase for ./private/rootCA.key:
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7tOXuVPao6oTx
+eQMMBY6JXYiRwERHvRv9YNbNNeKx7f8dh/22jRdU0hy6xJ2/OazCbyv6Sy2UVrqr
+RJxy1bK+2OkJi2YBEok9hvFeoPLPiFgqMDuDTQeaom23i2wmDJ4OrYwP4nrIr159
+S3KUtuvlUq41JnX6FaG+7bjFu85uAJmlFGbs6bTpn34gvkIUvSqg2OZfCPbFb/mQ
+n6TaKkMIRLKZ2wK5Xdf8x+grH8Z+NB+jyoITbOR4p8GE1pIHLiAMym5pIOWh68wZ
+Cwg5jyOldaTGBst7qd4f5LF1uhmrlP6xpIvCui3VJ3AOtxEmmV+Z/JILQCOeq6re
+1Afm1wOvAgMBAAECggEBAJBmpPBJeowOBoIBdz+bUsEILJT71UtfBxZQlk6+IoyB
+K96bDKqQNh+xmBpyQWynwOi/P5TImuLgKbCyEq0hCuZY1kXacHlouh2UH0GODd1r
+5W9nNZFYA/6I8GDgKC3JTRq7leFueMjEaKt5DEetxSHhDlWjJeVjGNBZ7uhnB3KF
+QEFT9lL8Styps3oGc3nJxlfa3+1sKPAI+V7Tb+21OjlQB6BVQ7MG9jauWIltPcAu
+HTQpVwZp7jVLpwXXMrEJukxycBZNH77C80jM45+gG33g4rHXzGtMch/rquctXAYe
+v3aAIkttqOE3XVCdVa8eaLJRiWYYThYAapA2ar9JQiECgYEA4cR9kqdB/lDD8tSZ
+Y3eghNTKDKEGtxrwoG7K1LxHo4A2R4x4Sym12LVzaNOxspcvs1ZzH5gwD+RXAFF4
+RrI4p33pLUT97Puj1p/1BoN91SRVv1P10zdcwNKjJ8n+AUgEgE2bEzQ0lYxLlIFG
+F4oTLta2JusupkU7VngOjPkw9p8CgYEA1Neldaz6JlTA1cCgMB/CNXs3MZBUbHCT
+vjgVIgDYaZA9fk9a4xsKHdPd0kk/zd/WkeVJjqsa2PsESeirfLNgLRPzhrYeN+cF
+z+O0o/runZQopv3oS+UuqBPF4KWQZqss++dsXUQ9uWWH9PYQIzsK/gnWiKikuGfu
+1NpLDZkKKPECgYEAjr/MnlO/OGwc2YdvTSMwjYx2DLIsKs6P4wDqosRBj7HboDXD
+QdMntdRVGqzvqHpLoNtCg3GYwhOgpwTcReceR1knfIYpABTELUqKhQnTIFePGCCg
+SGKy9QC6RMhFIM5GelGXgfb6YKyKhWWPygZ1xqHgHo+JuXwA3tWebaiKOwUCgYBW
+4NtSCFRnVwsLdUAtxJjiebQS0CYVyXIVIBFIOu4bUNw49a1UrFHZ0QRndKzNnUOZ
+c+0thhxEW1npzUZKdXGZlN4/q5D0IqHVtM2kbaX+vl5Fo7ixWhBMXR3VT998ePy4
+qkMqYtOLHK19SP9XUh9viJaAW84403vCeIRQPZrPEQKBgGtV4zyW4FhS4b20o1x3
+QfZUnoletrwvszIDW2Dh7i3kna6T2el3RgjK3AvgxyOoGw31hDtlj0DgYoADcTPs
+tZNXgMGb740z2idif+T8AgeciE4rm407buyMSxwdMs8leQOs3t4kmQpQ8trWji6H
+eruswqgyekcE6drRewv92wNP
+-----END PRIVATE KEY-----
+Private-Key: (2048 bit)
+modulus:
+    00:bb:b4:e5:ee:54:f6:a8:ea:84:f1:79:03:0c:05:
+    8e:89:5d:88:91:c0:44:47:bd:1b:fd:60:d6:cd:35:
+    e2:b1:ed:ff:1d:87:fd:b6:8d:17:54:d2:1c:ba:c4:
+    9d:bf:39:ac:c2:6f:2b:fa:4b:2d:94:56:ba:ab:44:
+    9c:72:d5:b2:be:d8:e9:09:8b:66:01:12:89:3d:86:
+    f1:5e:a0:f2:cf:88:58:2a:30:3b:83:4d:07:9a:a2:
+    6d:b7:8b:6c:26:0c:9e:0e:ad:8c:0f:e2:7a:c8:af:
+    5e:7d:4b:72:94:b6:eb:e5:52:ae:35:26:75:fa:15:
+    a1:be:ed:b8:c5:bb:ce:6e:00:99:a5:14:66:ec:e9:
+    b4:e9:9f:7e:20:be:42:14:bd:2a:a0:d8:e6:5f:08:
+    f6:c5:6f:f9:90:9f:a4:da:2a:43:08:44:b2:99:db:
+    02:b9:5d:d7:fc:c7:e8:2b:1f:c6:7e:34:1f:a3:ca:
+    82:13:6c:e4:78:a7:c1:84:d6:92:07:2e:20:0c:ca:
+    6e:69:20:e5:a1:eb:cc:19:0b:08:39:8f:23:a5:75:
+    a4:c6:06:cb:7b:a9:de:1f:e4:b1:75:ba:19:ab:94:
+    fe:b1:a4:8b:c2:ba:2d:d5:27:70:0e:b7:11:26:99:
+    5f:99:fc:92:0b:40:23:9e:ab:aa:de:d4:07:e6:d7:
+    03:af
+publicExponent: 65537 (0x10001)
+privateExponent:
+    00:90:66:a4:f0:49:7a:8c:0e:06:82:01:77:3f:9b:
+    52:c1:08:2c:94:fb:d5:4b:5f:07:16:50:96:4e:be:
+    22:8c:81:2b:de:9b:0c:aa:90:36:1f:b1:98:1a:72:
+    41:6c:a7:c0:e8:bf:3f:94:c8:9a:e2:e0:29:b0:b2:
+    12:ad:21:0a:e6:58:d6:45:da:70:79:68:ba:1d:94:
+    1f:41:8e:0d:dd:6b:e5:6f:67:35:91:58:03:fe:88:
+    f0:60:e0:28:2d:c9:4d:1a:bb:95:e1:6e:78:c8:c4:
+    68:ab:79:0c:47:ad:c5:21:e1:0e:55:a3:25:e5:63:
+    18:d0:59:ee:e8:67:07:72:85:40:41:53:f6:52:fc:
+    4a:dc:a9:b3:7a:06:73:79:c9:c6:57:da:df:ed:6c:
+    28:f0:08:f9:5e:d3:6f:ed:b5:3a:39:50:07:a0:55:
+    43:b3:06:f6:36:ae:58:89:6d:3d:c0:2e:1d:34:29:
+    57:06:69:ee:35:4b:a7:05:d7:32:b1:09:ba:4c:72:
+    70:16:4d:1f:be:c2:f3:48:cc:e3:9f:a0:1b:7d:e0:
+    e2:b1:d7:cc:6b:4c:72:1f:eb:aa:e7:2d:5c:06:1e:
+    bf:76:80:22:4b:6d:a8:e1:37:5d:50:9d:55:af:1e:
+    68:b2:51:89:66:18:4e:16:00:6a:90:36:6a:bf:49:
+    42:21
+prime1:
+    00:e1:c4:7d:92:a7:41:fe:50:c3:f2:d4:99:63:77:
+    a0:84:d4:ca:0c:a1:06:b7:1a:f0:a0:6e:ca:d4:bc:
+    47:a3:80:36:47:8c:78:4b:29:b5:d8:b5:73:68:d3:
+    b1:b2:97:2f:b3:56:73:1f:98:30:0f:e4:57:00:51:
+    78:46:b2:38:a7:7d:e9:2d:44:fd:ec:fb:a3:d6:9f:
+    f5:06:83:7d:d5:24:55:bf:53:f5:d3:37:5c:c0:d2:
+    a3:27:c9:fe:01:48:04:80:4d:9b:13:34:34:95:8c:
+    4b:94:81:46:17:8a:13:2e:d6:b6:26:eb:2e:a6:45:
+    3b:56:78:0e:8c:f9:30:f6:9f
+prime2:
+    00:d4:d7:a5:75:ac:fa:26:54:c0:d5:c0:a0:30:1f:
+    c2:35:7b:37:31:90:54:6c:70:93:be:38:15:22:00:
+    d8:69:90:3d:7e:4f:5a:e3:1b:0a:1d:d3:dd:d2:49:
+    3f:cd:df:d6:91:e5:49:8e:ab:1a:d8:fb:04:49:e8:
+    ab:7c:b3:60:2d:13:f3:86:b6:1e:37:e7:05:cf:e3:
+    b4:a3:fa:ee:9d:94:28:a6:fd:e8:4b:e5:2e:a8:13:
+    c5:e0:a5:90:66:ab:2c:fb:e7:6c:5d:44:3d:b9:65:
+    87:f4:f6:10:23:3b:0a:fe:09:d6:88:a8:a4:b8:67:
+    ee:d4:da:4b:0d:99:0a:28:f1
+exponent1:
+    00:8e:bf:cc:9e:53:bf:38:6c:1c:d9:87:6f:4d:23:
+    30:8d:8c:76:0c:b2:2c:2a:ce:8f:e3:00:ea:a2:c4:
+    41:8f:b1:db:a0:35:c3:41:d3:27:b5:d4:55:1a:ac:
+    ef:a8:7a:4b:a0:db:42:83:71:98:c2:13:a0:a7:04:
+    dc:45:e7:1e:47:59:27:7c:86:29:00:14:c4:2d:4a:
+    8a:85:09:d3:20:57:8f:18:20:a0:48:62:b2:f5:00:
+    ba:44:c8:45:20:ce:46:7a:51:97:81:f6:fa:60:ac:
+    8a:85:65:8f:ca:06:75:c6:a1:e0:1e:8f:89:b9:7c:
+    00:de:d5:9e:6d:a8:8a:3b:05
+exponent2:
+    56:e0:db:52:08:54:67:57:0b:0b:75:40:2d:c4:98:
+    e2:79:b4:12:d0:26:15:c9:72:15:20:11:48:3a:ee:
+    1b:50:dc:38:f5:ad:54:ac:51:d9:d1:04:67:74:ac:
+    cd:9d:43:99:73:ed:2d:86:1c:44:5b:59:e9:cd:46:
+    4a:75:71:99:94:de:3f:ab:90:f4:22:a1:d5:b4:cd:
+    a4:6d:a5:fe:be:5e:45:a3:b8:b1:5a:10:4c:5d:1d:
+    d5:4f:df:7c:78:fc:b8:aa:43:2a:62:d3:8b:1c:ad:
+    7d:48:ff:57:52:1f:6f:88:96:80:5b:ce:38:d3:7b:
+    c2:78:84:50:3d:9a:cf:11
+coefficient:
+    6b:55:e3:3c:96:e0:58:52:e1:bd:b4:a3:5c:77:41:
+    f6:54:9e:89:5e:b6:bc:2f:b3:32:03:5b:60:e1:ee:
+    2d:e4:9d:ae:93:d9:e9:77:46:08:ca:dc:0b:e0:c7:
+    23:a8:1b:0d:f5:84:3b:65:8f:40:e0:62:80:03:71:
+    33:ec:b5:93:57:80:c1:9b:ef:8d:33:da:27:62:7f:
+    e4:fc:02:07:9c:88:4e:2b:9b:8d:3b:6e:ec:8c:4b:
+    1c:1d:32:cf:25:79:03:ac:de:de:24:99:0a:50:f2:
+    da:d6:8e:2e:87:7a:bb:ac:c2:a8:32:7a:47:04:e9:
+    da:d1:7b:0b:fd:db:03:4f
+[san@sandell CA-DIR]$
+
+------------------------------------------------------------
+2. The next step is to self-sign this certificate.
+------------------------------------------------------------
+
+[san@sandell CA-DIR]$ openssl req -x509 -new -key ./private/rootCA.key -sha256 -days 3650 -out ./certsdb/rootCA.pem
+Enter pass phrase for ./private/rootCA.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:IN
+State or Province Name (full name) []:MAHARASHTRA
+Locality Name (eg, city) [Default City]:MUMBAI
+Organization Name (eg, company) [Default Company Ltd]:DEMO CA INC.
+Organizational Unit Name (eg, section) []:CA
+Common Name (eg, your name or your server's hostname) []:DEMO CA   
+Email Address []:mail@democa.example.com
+[san@sandell CA-DIR]$ openssl x509 -in certsdb/rootCA.pem -textCertificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 16446245868292027405 (0xe43ccd7b3448340d)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=DEMO CA INC., OU=CA, CN=DEMO CA/emailAddress=mail@democa.example.com
+        Validity
+            Not Before: Feb  3 07:41:32 2018 GMT
+            Not After : Feb  1 07:41:32 2028 GMT
+        Subject: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=DEMO CA INC., OU=CA, CN=DEMO CA/emailAddress=mail@democa.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bb:b4:e5:ee:54:f6:a8:ea:84:f1:79:03:0c:05:
+                    8e:89:5d:88:91:c0:44:47:bd:1b:fd:60:d6:cd:35:
+                    e2:b1:ed:ff:1d:87:fd:b6:8d:17:54:d2:1c:ba:c4:
+                    9d:bf:39:ac:c2:6f:2b:fa:4b:2d:94:56:ba:ab:44:
+                    9c:72:d5:b2:be:d8:e9:09:8b:66:01:12:89:3d:86:
+                    f1:5e:a0:f2:cf:88:58:2a:30:3b:83:4d:07:9a:a2:
+                    6d:b7:8b:6c:26:0c:9e:0e:ad:8c:0f:e2:7a:c8:af:
+                    5e:7d:4b:72:94:b6:eb:e5:52:ae:35:26:75:fa:15:
+                    a1:be:ed:b8:c5:bb:ce:6e:00:99:a5:14:66:ec:e9:
+                    b4:e9:9f:7e:20:be:42:14:bd:2a:a0:d8:e6:5f:08:
+                    f6:c5:6f:f9:90:9f:a4:da:2a:43:08:44:b2:99:db:
+                    02:b9:5d:d7:fc:c7:e8:2b:1f:c6:7e:34:1f:a3:ca:
+                    82:13:6c:e4:78:a7:c1:84:d6:92:07:2e:20:0c:ca:
+                    6e:69:20:e5:a1:eb:cc:19:0b:08:39:8f:23:a5:75:
+                    a4:c6:06:cb:7b:a9:de:1f:e4:b1:75:ba:19:ab:94:
+                    fe:b1:a4:8b:c2:ba:2d:d5:27:70:0e:b7:11:26:99:
+                    5f:99:fc:92:0b:40:23:9e:ab:aa:de:d4:07:e6:d7:
+                    03:af
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Subject Key Identifier: 
+                CB:82:BB:7D:20:F3:AF:2C:22:0E:C4:76:C3:4C:DF:45:D8:69:62:75
+            X509v3 Authority Key Identifier: 
+                keyid:CB:82:BB:7D:20:F3:AF:2C:22:0E:C4:76:C3:4C:DF:45:D8:69:62:75
+
+            X509v3 Basic Constraints: 
+                CA:TRUE
+    Signature Algorithm: sha256WithRSAEncryption
+         19:21:10:ec:0c:c5:0e:af:4e:6f:d0:ca:d6:ca:72:65:fb:a8:
+         bc:11:97:0d:a7:32:29:12:9a:a5:9c:b0:46:50:70:ed:62:37:
+         ef:07:67:b5:c7:78:8e:00:d6:e1:87:5e:c2:bc:ba:88:91:a2:
+         34:e7:26:d0:19:5e:34:84:e5:21:49:fd:d7:67:36:ff:c6:74:
+         06:6f:ad:98:85:86:1a:65:be:ac:d9:3c:f1:f4:43:cd:a6:47:
+         05:42:19:a6:3f:4b:1a:1e:77:58:46:e7:a7:3c:76:b8:86:80:
+         0e:80:26:2e:5a:f0:5c:4b:59:ca:a3:2f:a1:71:46:54:62:da:
+         97:ce:22:82:a8:e6:21:48:0b:b1:e6:06:42:7a:04:09:fe:6b:
+         55:56:e2:9f:c3:d7:cf:93:32:c9:6c:ee:d7:e3:44:6d:a5:bd:
+         b5:8e:aa:e6:36:cb:fe:fc:83:25:b4:80:da:5f:d2:92:19:45:
+         b2:23:ab:1e:15:89:19:2d:41:2d:aa:af:90:72:86:aa:0c:b1:
+         d9:5a:97:bc:db:84:3d:2b:36:2a:83:a4:4e:89:85:05:0c:0b:
+         51:65:3f:4a:45:22:21:01:b6:e1:b2:6b:c8:6c:89:9b:a0:2a:
+         74:fe:f8:3f:ca:b4:f0:f6:f6:f4:8c:a5:9b:ed:77:75:e0:91:
+         c5:b4:ea:04
+-----BEGIN CERTIFICATE-----
+MIID+TCCAuGgAwIBAgIJAOQ8zXs0SDQNMA0GCSqGSIb3DQEBCwUAMIGSMQswCQYD
+VQQGEwJJTjEUMBIGA1UECAwLTUFIQVJBU0hUUkExDzANBgNVBAcMBk1VTUJBSTEV
+MBMGA1UECgwMREVNTyBDQSBJTkMuMQswCQYDVQQLDAJDQTEQMA4GA1UEAwwHREVN
+TyBDQTEmMCQGCSqGSIb3DQEJARYXbWFpbEBkZW1vY2EuZXhhbXBsZS5jb20wHhcN
+MTgwMjAzMDc0MTMyWhcNMjgwMjAxMDc0MTMyWjCBkjELMAkGA1UEBhMCSU4xFDAS
+BgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNVBAoMDERF
+TU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0ExJjAkBgkq
+hkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAu7Tl7lT2qOqE8XkDDAWOiV2IkcBER70b/WDWzTXi
+se3/HYf9to0XVNIcusSdvzmswm8r+kstlFa6q0ScctWyvtjpCYtmARKJPYbxXqDy
+z4hYKjA7g00HmqJtt4tsJgyeDq2MD+J6yK9efUtylLbr5VKuNSZ1+hWhvu24xbvO
+bgCZpRRm7Om06Z9+IL5CFL0qoNjmXwj2xW/5kJ+k2ipDCESymdsCuV3X/MfoKx/G
+fjQfo8qCE2zkeKfBhNaSBy4gDMpuaSDloevMGQsIOY8jpXWkxgbLe6neH+SxdboZ
+q5T+saSLwrot1SdwDrcRJplfmfySC0Ajnquq3tQH5tcDrwIDAQABo1AwTjAdBgNV
+HQ4EFgQUy4K7fSDzrywiDsR2w0zfRdhpYnUwHwYDVR0jBBgwFoAUy4K7fSDzrywi
+DsR2w0zfRdhpYnUwDAYDVR0TBAUwAwEB/zANBgkqhkiG9w0BAQsFAAOCAQEAGSEQ
+7AzFDq9Ob9DK1spyZfuovBGXDacyKRKapZywRlBw7WI37wdntcd4jgDW4Ydewry6
+iJGiNOcm0BleNITlIUn912c2/8Z0Bm+tmIWGGmW+rNk88fRDzaZHBUIZpj9LGh53
+WEbnpzx2uIaADoAmLlrwXEtZyqMvoXFGVGLal84igqjmIUgLseYGQnoECf5rVVbi
+n8PXz5MyyWzu1+NEbaW9tY6q5jbL/vyDJbSA2l/SkhlFsiOrHhWJGS1BLaqvkHKG
+qgyx2VqXvNuEPSs2KoOkTomFBQwLUWU/SkUiIQG24bJryGyJm6AqdP74P8q08Pb2
+9Iylm+13deCRxbTqBA==
+-----END CERTIFICATE-----
+[san@sandell CA-DIR]$
+
+
+
+-----------------------------------------------------------------
+3. Create certificate for a device (server mail.example.com).
+-----------------------------------------------------------------
+openssl_noprompt_client configuration file.
+-----------------------------------------------------------------
+
+[san@sandell CA-DIR]$ cat ./conf/openssl_noprompt_client.cnf
+#
+# OpenSSL configuration file.
+#
+
+# Establish working directory.
+
+dir                                     = /home/san/TEST-CA/CA-DIR
+
+[ ca ]
+default_ca                              = CA_default
+
+[ CA_default ]
+serial                                  = $dir/serial/serial.txt
+database                                = $dir/certindex/certindex.txt
+certs					= $dir/certsdb
+new_certs_dir                           = $certs
+certificate                             = $dir/CA/cert/rootCA.pem
+private_key                             = $dir/CA/private/rootCA.key
+default_days                            = 365
+default_md                              = sha256
+preserve                                = no
+email_in_dn                             = yes
+nameopt                                 = default_ca
+certopt                                 = default_ca
+policy                                  = policy_match
+
+[ policy_match ]
+countryName                             = match
+stateOrProvinceName                     = match
+organizationName                        = optional
+organizationalUnitName                  = optional
+commonName                              = supplied
+emailAddress                            = optional
+
+[ req ]
+default_bits                            = 2048                  # Size of keys
+default_keyfile                         = key.pem               # name of generated keys
+default_md                              = sha256                # message digest algorithm
+string_mask                             = nombstr               # permitted characters
+distinguished_name                      = req_distinguished_name
+req_extensions                          = v3_req
+prompt					= no			# Added by user
+
+
+[ req_distinguished_name ]
+ C                      = IN
+ ST                     = MAHARASHTRA
+ L                      = MUMBAI
+ O                      = DEMO INC. LTD
+ OU                     = _ORG_UNIT
+ CN                     = _COMMON_NAME
+ emailAddress           = _E_MAIL
+
+[ v3_ca ]
+basicConstraints                        = CA:TRUE
+subjectKeyIdentifier                    = hash
+authorityKeyIdentifier                  = keyid:always,issuer:always
+
+[ v3_req ]
+basicConstraints                        = CA:FALSE
+subjectKeyIdentifier                    = hash
+
+[san@sandell CA-DIR]$
+
+
+-----------------------------------------------------------------
+a. Generate private key.
+-----------------------------------------------------------------
+[san@sandell CA-DIR]$ openssl genrsa -des3 -out ./private/mail.example.com.key 2048 
+Generating RSA private key, 2048 bit long modulus
+.......................................+++
+..............................................................................................................+++
+e is 65537 (0x10001)
+Enter pass phrase for ./private/mail.example.com.key:
+Verifying - Enter pass phrase for ./private/mail.example.com.key:
+[san@sandell CA-DIR]$ openssl pkey -in ./private/mail.example.com.key -text
+Enter pass phrase for ./private/mail.example.com.key:
+-----BEGIN PRIVATE KEY-----
+MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7Hjq1GwNL971e
+9Z5zwadn2s4Xq4/7zVXCHL0D+rfTMSNqxNfnGbvp6CaWVGqiFst1YlOmsQXaGn15
+6eMR2qIC+7svFf0JMrNv5z0Wi5atyvBKpNQf2AY2erDZy7WKD3X2dHKjjcijHgJt
++AaZNrglch8yb2OAvqfCVOw52u5bG14xNQPJonaLH7+snj2goGvv9eVe/KVqtFn4
+su7Ty1z0fDFFnUUxvjEKAEZe9jkCLphn3L54lAO40yEFiEjuB7Upd/sPDwZgJj5b
+7PtqoIMGWkpBqrorP+UT2N6uD2lwFPHCPHIlH/g8P+1lycEMNK5UFFHuQfnDEKgE
+T9kT3FiFAgMBAAECggEBAKtn+5tfDVwPqtdL5ERhhvppwxSHwjOFWyOfs73rc2zw
+vGLXwnceabbRRFe9KJkmjGYRFlPCIXwze/GrwKfgQTy+YC+30r0URq8hgiIe6H53
+Qjr+Vpp9BuPs7Af2xWuc0hBbh5AvFzXlDZCy/UhoibMzoURQKTQMchxgMqyk0md9
+Trrx0h0JwlAydq7UbovS7PpHTyc3ZTddm6ybmIr7e/yDTCYHfLws8QxadtW/Utw9
+WIzmZR4B6Ig0F0G7E+vAZblKevdbCyiCw0SwXWHIv14UfqmiLI0ZsbQ3vBaYPzEy
+ymt1OgJWe2+xiG80N0SlGmWO0f8M1HO2zxdnt8GtVpkCgYEA6RKwtxcTvC5iMhLg
+jk5OXALL+tKhM6fyQViNGFmAjca+206OKEkUAxCIImXQiDKbS9MeUiEazFZsb0OZ
+gwjQboNOR1tLqKVO7tu0bJVPV1j2UWJY9IRsnaIPzjggi+04I00n/0O7RyiyyRz8
+879idrgIQ3Itfnie9IUJEZ8hNKsCgYEAzYZKC6FA9ZfHqgdwNMHkhMu9Q/nTonsZ
+JGTcXCAYPVu+0SL074nlvvZF78uCsyzTO+PD0CqD8WHI0Ss1A+cOhT/lk0CAG7IQ
+yPmBnN7cIzsGHxIpq5d25RpLPfV1U5cz/Ib5Y90Vl0BWwUPtbhNhT/+NbWPw2gXn
+W18LODsdx48CgYAYDiHHA865oV/pIyGiDlrwDCnZXVvd5PuP2v/U/4fRGi4gnF73
+sXMrTc1/H1sCc5aroMKEX35QkKroYOW7LHG2tj6iBr4sTcNzy6E3g8GIlln11Fyx
+/+jl7BANjKVvS7B7lD8IjYkKsxygvSkuTxZuglf3/hTL9M8TFZf2BaJ7uQKBgQCY
+7joe2Ui69svtq0dFGpnubqRQ9o8SMkMNH7gRHRisX55nhHl53MSGCj8UJf0FUm+D
++wFz3o77iGWjr2DtnHrjkB5GKhKpiSCQS4i0r+hilsMBT8SOGFCyPZSLcCBzqOlY
+GR9tvc8ZExj7Co6b//PDUUdthJZtxULYbKqult6b5QKBgDJkeOcao+RDB4U29Zxk
+W1LnIFzyJClwJ49fsW+FAWV9CvDRr5lQixSRbNG11mbREIhU/L2ZSiAwFPo5Wlw8
+8uWJ/pW+hbL1PQEmxKg3GIA/U+JB1nfKaan8+BkEcOJmYYNUZB784RJQYcwnet1t
+ex7eJbO3F2E4acbXCigRTYu9
+-----END PRIVATE KEY-----
+Private-Key: (2048 bit)
+modulus:
+    00:bb:1e:3a:b5:1b:03:4b:f7:bd:5e:f5:9e:73:c1:
+    a7:67:da:ce:17:ab:8f:fb:cd:55:c2:1c:bd:03:fa:
+    b7:d3:31:23:6a:c4:d7:e7:19:bb:e9:e8:26:96:54:
+    6a:a2:16:cb:75:62:53:a6:b1:05:da:1a:7d:79:e9:
+    e3:11:da:a2:02:fb:bb:2f:15:fd:09:32:b3:6f:e7:
+    3d:16:8b:96:ad:ca:f0:4a:a4:d4:1f:d8:06:36:7a:
+    b0:d9:cb:b5:8a:0f:75:f6:74:72:a3:8d:c8:a3:1e:
+    02:6d:f8:06:99:36:b8:25:72:1f:32:6f:63:80:be:
+    a7:c2:54:ec:39:da:ee:5b:1b:5e:31:35:03:c9:a2:
+    76:8b:1f:bf:ac:9e:3d:a0:a0:6b:ef:f5:e5:5e:fc:
+    a5:6a:b4:59:f8:b2:ee:d3:cb:5c:f4:7c:31:45:9d:
+    45:31:be:31:0a:00:46:5e:f6:39:02:2e:98:67:dc:
+    be:78:94:03:b8:d3:21:05:88:48:ee:07:b5:29:77:
+    fb:0f:0f:06:60:26:3e:5b:ec:fb:6a:a0:83:06:5a:
+    4a:41:aa:ba:2b:3f:e5:13:d8:de:ae:0f:69:70:14:
+    f1:c2:3c:72:25:1f:f8:3c:3f:ed:65:c9:c1:0c:34:
+    ae:54:14:51:ee:41:f9:c3:10:a8:04:4f:d9:13:dc:
+    58:85
+publicExponent: 65537 (0x10001)
+privateExponent:
+    00:ab:67:fb:9b:5f:0d:5c:0f:aa:d7:4b:e4:44:61:
+    86:fa:69:c3:14:87:c2:33:85:5b:23:9f:b3:bd:eb:
+    73:6c:f0:bc:62:d7:c2:77:1e:69:b6:d1:44:57:bd:
+    28:99:26:8c:66:11:16:53:c2:21:7c:33:7b:f1:ab:
+    c0:a7:e0:41:3c:be:60:2f:b7:d2:bd:14:46:af:21:
+    82:22:1e:e8:7e:77:42:3a:fe:56:9a:7d:06:e3:ec:
+    ec:07:f6:c5:6b:9c:d2:10:5b:87:90:2f:17:35:e5:
+    0d:90:b2:fd:48:68:89:b3:33:a1:44:50:29:34:0c:
+    72:1c:60:32:ac:a4:d2:67:7d:4e:ba:f1:d2:1d:09:
+    c2:50:32:76:ae:d4:6e:8b:d2:ec:fa:47:4f:27:37:
+    65:37:5d:9b:ac:9b:98:8a:fb:7b:fc:83:4c:26:07:
+    7c:bc:2c:f1:0c:5a:76:d5:bf:52:dc:3d:58:8c:e6:
+    65:1e:01:e8:88:34:17:41:bb:13:eb:c0:65:b9:4a:
+    7a:f7:5b:0b:28:82:c3:44:b0:5d:61:c8:bf:5e:14:
+    7e:a9:a2:2c:8d:19:b1:b4:37:bc:16:98:3f:31:32:
+    ca:6b:75:3a:02:56:7b:6f:b1:88:6f:34:37:44:a5:
+    1a:65:8e:d1:ff:0c:d4:73:b6:cf:17:67:b7:c1:ad:
+    56:99
+prime1:
+    00:e9:12:b0:b7:17:13:bc:2e:62:32:12:e0:8e:4e:
+    4e:5c:02:cb:fa:d2:a1:33:a7:f2:41:58:8d:18:59:
+    80:8d:c6:be:db:4e:8e:28:49:14:03:10:88:22:65:
+    d0:88:32:9b:4b:d3:1e:52:21:1a:cc:56:6c:6f:43:
+    99:83:08:d0:6e:83:4e:47:5b:4b:a8:a5:4e:ee:db:
+    b4:6c:95:4f:57:58:f6:51:62:58:f4:84:6c:9d:a2:
+    0f:ce:38:20:8b:ed:38:23:4d:27:ff:43:bb:47:28:
+    b2:c9:1c:fc:f3:bf:62:76:b8:08:43:72:2d:7e:78:
+    9e:f4:85:09:11:9f:21:34:ab
+prime2:
+    00:cd:86:4a:0b:a1:40:f5:97:c7:aa:07:70:34:c1:
+    e4:84:cb:bd:43:f9:d3:a2:7b:19:24:64:dc:5c:20:
+    18:3d:5b:be:d1:22:f4:ef:89:e5:be:f6:45:ef:cb:
+    82:b3:2c:d3:3b:e3:c3:d0:2a:83:f1:61:c8:d1:2b:
+    35:03:e7:0e:85:3f:e5:93:40:80:1b:b2:10:c8:f9:
+    81:9c:de:dc:23:3b:06:1f:12:29:ab:97:76:e5:1a:
+    4b:3d:f5:75:53:97:33:fc:86:f9:63:dd:15:97:40:
+    56:c1:43:ed:6e:13:61:4f:ff:8d:6d:63:f0:da:05:
+    e7:5b:5f:0b:38:3b:1d:c7:8f
+exponent1:
+    18:0e:21:c7:03:ce:b9:a1:5f:e9:23:21:a2:0e:5a:
+    f0:0c:29:d9:5d:5b:dd:e4:fb:8f:da:ff:d4:ff:87:
+    d1:1a:2e:20:9c:5e:f7:b1:73:2b:4d:cd:7f:1f:5b:
+    02:73:96:ab:a0:c2:84:5f:7e:50:90:aa:e8:60:e5:
+    bb:2c:71:b6:b6:3e:a2:06:be:2c:4d:c3:73:cb:a1:
+    37:83:c1:88:96:59:f5:d4:5c:b1:ff:e8:e5:ec:10:
+    0d:8c:a5:6f:4b:b0:7b:94:3f:08:8d:89:0a:b3:1c:
+    a0:bd:29:2e:4f:16:6e:82:57:f7:fe:14:cb:f4:cf:
+    13:15:97:f6:05:a2:7b:b9
+exponent2:
+    00:98:ee:3a:1e:d9:48:ba:f6:cb:ed:ab:47:45:1a:
+    99:ee:6e:a4:50:f6:8f:12:32:43:0d:1f:b8:11:1d:
+    18:ac:5f:9e:67:84:79:79:dc:c4:86:0a:3f:14:25:
+    fd:05:52:6f:83:fb:01:73:de:8e:fb:88:65:a3:af:
+    60:ed:9c:7a:e3:90:1e:46:2a:12:a9:89:20:90:4b:
+    88:b4:af:e8:62:96:c3:01:4f:c4:8e:18:50:b2:3d:
+    94:8b:70:20:73:a8:e9:58:19:1f:6d:bd:cf:19:13:
+    18:fb:0a:8e:9b:ff:f3:c3:51:47:6d:84:96:6d:c5:
+    42:d8:6c:aa:ae:96:de:9b:e5
+coefficient:
+    32:64:78:e7:1a:a3:e4:43:07:85:36:f5:9c:64:5b:
+    52:e7:20:5c:f2:24:29:70:27:8f:5f:b1:6f:85:01:
+    65:7d:0a:f0:d1:af:99:50:8b:14:91:6c:d1:b5:d6:
+    66:d1:10:88:54:fc:bd:99:4a:20:30:14:fa:39:5a:
+    5c:3c:f2:e5:89:fe:95:be:85:b2:f5:3d:01:26:c4:
+    a8:37:18:80:3f:53:e2:41:d6:77:ca:69:a9:fc:f8:
+    19:04:70:e2:66:61:83:54:64:1e:fc:e1:12:50:61:
+    cc:27:7a:dd:6d:7b:1e:de:25:b3:b7:17:61:38:69:
+    c6:d7:0a:28:11:4d:8b:bd
+[san@sandell CA-DIR]$ 
+
+-----------------------------------------------------------
+b. Generate CSR
+-----------------------------------------------------------
+
+[san@sandell CA-DIR]$ openssl req -new -key ./private/mail.example.com.key -out ./certreqs/mail.example.com.csr
+Enter pass phrase for ./private/mail.example.com.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:IN
+State or Province Name (full name) []:MAHARASHTRA
+Locality Name (eg, city) [Default City]:MUMBAI
+Organization Name (eg, company) [Default Company Ltd]:example.com Mail      
+Organizational Unit Name (eg, section) []:mail
+Common Name (eg, your name or your server's hostname) []:mail.example.com
+Email Address []:admin@mail.example.com
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:DEMOCA
+An optional company name []:
+[san@sandell CA-DIR]$ openssl req -in ./certreqs/mail.example.com.csr -text
+Certificate Request:
+    Data:
+        Version: 0 (0x0)
+        Subject: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=example.com Mail, OU=mail, CN=mail.example.com/emailAddress=admin@mail.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bb:1e:3a:b5:1b:03:4b:f7:bd:5e:f5:9e:73:c1:
+                    a7:67:da:ce:17:ab:8f:fb:cd:55:c2:1c:bd:03:fa:
+                    b7:d3:31:23:6a:c4:d7:e7:19:bb:e9:e8:26:96:54:
+                    6a:a2:16:cb:75:62:53:a6:b1:05:da:1a:7d:79:e9:
+                    e3:11:da:a2:02:fb:bb:2f:15:fd:09:32:b3:6f:e7:
+                    3d:16:8b:96:ad:ca:f0:4a:a4:d4:1f:d8:06:36:7a:
+                    b0:d9:cb:b5:8a:0f:75:f6:74:72:a3:8d:c8:a3:1e:
+                    02:6d:f8:06:99:36:b8:25:72:1f:32:6f:63:80:be:
+                    a7:c2:54:ec:39:da:ee:5b:1b:5e:31:35:03:c9:a2:
+                    76:8b:1f:bf:ac:9e:3d:a0:a0:6b:ef:f5:e5:5e:fc:
+                    a5:6a:b4:59:f8:b2:ee:d3:cb:5c:f4:7c:31:45:9d:
+                    45:31:be:31:0a:00:46:5e:f6:39:02:2e:98:67:dc:
+                    be:78:94:03:b8:d3:21:05:88:48:ee:07:b5:29:77:
+                    fb:0f:0f:06:60:26:3e:5b:ec:fb:6a:a0:83:06:5a:
+                    4a:41:aa:ba:2b:3f:e5:13:d8:de:ae:0f:69:70:14:
+                    f1:c2:3c:72:25:1f:f8:3c:3f:ed:65:c9:c1:0c:34:
+                    ae:54:14:51:ee:41:f9:c3:10:a8:04:4f:d9:13:dc:
+                    58:85
+                Exponent: 65537 (0x10001)
+        Attributes:
+            challengePassword        :unable to print attribute
+    Signature Algorithm: sha1WithRSAEncryption
+         62:dd:45:1a:6a:74:03:f5:ec:6c:ce:ed:4d:d7:04:21:18:e2:
+         03:62:4c:e7:8b:ac:eb:f8:a2:0c:a8:80:a4:70:86:7e:23:5e:
+         98:90:b4:de:c6:af:df:57:88:a9:b4:f8:8e:c0:db:4c:7b:48:
+         14:81:43:7d:a8:d2:d3:b4:c2:ed:c8:56:8e:b3:49:fd:c0:99:
+         71:62:b1:9c:2a:ed:8a:8e:1c:6f:c0:e2:79:9c:e3:9a:5d:47:
+         0b:82:60:80:b8:58:8b:99:63:f3:7f:b5:f1:ed:44:f4:a2:94:
+         23:58:67:e8:3b:0d:ee:08:47:46:81:88:d2:02:7c:31:17:65:
+         5b:ac:40:04:d9:4b:5a:f0:c4:55:d6:8f:91:49:89:f5:80:b1:
+         07:1a:43:89:b5:1b:8f:73:eb:fc:c1:1d:76:26:49:d4:08:60:
+         39:f2:4f:f6:64:9e:e4:de:a6:03:9d:45:58:4d:af:9b:76:a2:
+         78:9a:d0:c3:ff:a2:8b:e5:cb:71:22:cb:79:7a:06:c1:6e:5c:
+         50:dd:21:d7:54:7c:39:cd:05:32:a1:89:dd:01:56:df:4a:d5:
+         d5:14:5d:b0:57:b4:11:06:ed:a9:e2:eb:6a:20:52:e7:e1:ef:
+         cd:fe:c8:cf:b2:b5:8c:92:b0:2c:ad:77:79:fe:da:e5:cd:c0:
+         f5:70:fb:e6
+-----BEGIN CERTIFICATE REQUEST-----
+MIIC/TCCAeUCAQAwgaAxCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtNQUhBUkFTSFRS
+QTEPMA0GA1UEBwwGTVVNQkFJMRkwFwYDVQQKDBBleGFtcGxlLmNvbSBNYWlsMQ0w
+CwYDVQQLDARtYWlsMRkwFwYDVQQDDBBtYWlsLmV4YW1wbGUuY29tMSUwIwYJKoZI
+hvcNAQkBFhZhZG1pbkBtYWlsLmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAux46tRsDS/e9XvWec8GnZ9rOF6uP+81Vwhy9A/q30zEj
+asTX5xm76egmllRqohbLdWJTprEF2hp9eenjEdqiAvu7LxX9CTKzb+c9FouWrcrw
+SqTUH9gGNnqw2cu1ig919nRyo43Iox4CbfgGmTa4JXIfMm9jgL6nwlTsOdruWxte
+MTUDyaJ2ix+/rJ49oKBr7/XlXvylarRZ+LLu08tc9HwxRZ1FMb4xCgBGXvY5Ai6Y
+Z9y+eJQDuNMhBYhI7ge1KXf7Dw8GYCY+W+z7aqCDBlpKQaq6Kz/lE9jerg9pcBTx
+wjxyJR/4PD/tZcnBDDSuVBRR7kH5wxCoBE/ZE9xYhQIDAQABoBcwFQYJKoZIhvcN
+AQkHMQgMBkRFTU9DQTANBgkqhkiG9w0BAQUFAAOCAQEAYt1FGmp0A/XsbM7tTdcE
+IRjiA2JM54us6/iiDKiApHCGfiNemJC03sav31eIqbT4jsDbTHtIFIFDfajS07TC
+7chWjrNJ/cCZcWKxnCrtio4cb8DieZzjml1HC4JggLhYi5lj83+18e1E9KKUI1hn
+6DsN7ghHRoGI0gJ8MRdlW6xABNlLWvDEVdaPkUmJ9YCxBxpDibUbj3Pr/MEddiZJ
+1AhgOfJP9mSe5N6mA51FWE2vm3aieJrQw/+ii+XLcSLLeXoGwW5cUN0h11R8Oc0F
+MqGJ3QFW30rV1RRdsFe0EQbtqeLraiBS5+Hvzf7Iz7K1jJKwLK13ef7a5c3A9XD7
+5g==
+-----END CERTIFICATE REQUEST-----
+[san@sandell CA-DIR]$
+----------------------------------------------------------------------
+
+------------------------------------------------------
+c. Sign the CSR and create the certificate.
+------------------------------------------------------
+
+
+##########################################################
+This method has no option to specify configuration file.
+##########################################################
+
+[san@sandell CA-DIR]$ openssl x509 -req -in ./certreqs/mail.example.com.csr -CA ./certsdb/rootCA.pem -CAkey ./private/rootCA.key -CAcreateserial -out certsdb/mail.example.com.crt -days 2920 -sha256
+Signature ok
+subject=/C=IN/ST=MAHARASHTRA/L=MUMBAI/O=example.com Mail/OU=mail/CN=mail.example.com/emailAddress=admin@mail.example.com
+Getting CA Private Key
+Enter pass phrase for ./private/rootCA.key:
+[san@sandell CA-DIR]$ openssl x509 -in certsdb/mail.example.com.crt -text
+Certificate:
+    Data:
+        Version: 1 (0x0)
+        Serial Number: 10418722123552438128 (0x9096bc9213d8b770)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=DEMO CA INC., OU=CA, CN=DEMO CA/emailAddress=mail@democa.example.com
+        Validity
+            Not Before: Feb  3 11:05:40 2018 GMT
+            Not After : Feb  1 11:05:40 2026 GMT
+        Subject: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=example.com Mail, OU=mail, CN=mail.example.com/emailAddress=admin@mail.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bb:1e:3a:b5:1b:03:4b:f7:bd:5e:f5:9e:73:c1:
+                    a7:67:da:ce:17:ab:8f:fb:cd:55:c2:1c:bd:03:fa:
+                    b7:d3:31:23:6a:c4:d7:e7:19:bb:e9:e8:26:96:54:
+                    6a:a2:16:cb:75:62:53:a6:b1:05:da:1a:7d:79:e9:
+                    e3:11:da:a2:02:fb:bb:2f:15:fd:09:32:b3:6f:e7:
+                    3d:16:8b:96:ad:ca:f0:4a:a4:d4:1f:d8:06:36:7a:
+                    b0:d9:cb:b5:8a:0f:75:f6:74:72:a3:8d:c8:a3:1e:
+                    02:6d:f8:06:99:36:b8:25:72:1f:32:6f:63:80:be:
+                    a7:c2:54:ec:39:da:ee:5b:1b:5e:31:35:03:c9:a2:
+                    76:8b:1f:bf:ac:9e:3d:a0:a0:6b:ef:f5:e5:5e:fc:
+                    a5:6a:b4:59:f8:b2:ee:d3:cb:5c:f4:7c:31:45:9d:
+                    45:31:be:31:0a:00:46:5e:f6:39:02:2e:98:67:dc:
+                    be:78:94:03:b8:d3:21:05:88:48:ee:07:b5:29:77:
+                    fb:0f:0f:06:60:26:3e:5b:ec:fb:6a:a0:83:06:5a:
+                    4a:41:aa:ba:2b:3f:e5:13:d8:de:ae:0f:69:70:14:
+                    f1:c2:3c:72:25:1f:f8:3c:3f:ed:65:c9:c1:0c:34:
+                    ae:54:14:51:ee:41:f9:c3:10:a8:04:4f:d9:13:dc:
+                    58:85
+                Exponent: 65537 (0x10001)
+    Signature Algorithm: sha256WithRSAEncryption
+         ab:9b:ea:87:cc:9f:04:27:1d:70:7d:ed:3d:16:97:9b:5e:73:
+         f1:19:1a:b1:ca:d5:3a:71:a7:8a:4a:16:71:2c:a9:dd:78:35:
+         25:99:db:02:96:90:4c:79:0b:5c:6b:14:63:d6:a4:26:7a:42:
+         c0:05:4b:6b:fd:0d:35:fd:ab:95:3e:78:06:24:34:a4:4b:e5:
+         82:5c:9f:20:19:31:d9:a7:04:9e:e5:40:f9:2b:fe:8d:42:9e:
+         06:af:ac:1f:85:84:e4:9a:ef:b9:54:ae:f0:72:64:af:66:76:
+         4b:cf:e4:ce:f5:12:ec:b2:68:cf:d8:66:3a:57:65:94:80:31:
+         41:c0:fc:07:b3:aa:29:0b:a5:d0:46:be:a0:2e:26:f8:eb:4b:
+         f0:02:c5:f0:3a:97:77:65:38:1b:5b:e4:a9:b8:38:10:2b:6e:
+         91:20:3e:7c:aa:8e:d3:cb:86:72:ab:36:5e:9e:97:01:a4:0f:
+         33:eb:51:65:44:48:5d:ea:ea:10:79:be:3c:fe:3b:64:13:dd:
+         34:46:22:0d:44:7e:23:60:55:de:e6:ee:b7:b0:93:d9:1b:f9:
+         4c:9c:8d:9c:d7:32:f3:5e:df:66:47:33:ec:c0:45:8a:4e:cc:
+         10:d7:48:82:2d:68:f9:9f:bc:75:df:47:4b:7b:e5:f5:9c:d2:
+         7c:d5:4d:fc
+-----BEGIN CERTIFICATE-----
+MIIDsDCCApgCCQCQlrySE9i3cDANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMC
+SU4xFDASBgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNV
+BAoMDERFTU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0Ex
+JjAkBgkqhkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMB4XDTE4MDIw
+MzExMDU0MFoXDTI2MDIwMTExMDU0MFowgaAxCzAJBgNVBAYTAklOMRQwEgYDVQQI
+DAtNQUhBUkFTSFRSQTEPMA0GA1UEBwwGTVVNQkFJMRkwFwYDVQQKDBBleGFtcGxl
+LmNvbSBNYWlsMQ0wCwYDVQQLDARtYWlsMRkwFwYDVQQDDBBtYWlsLmV4YW1wbGUu
+Y29tMSUwIwYJKoZIhvcNAQkBFhZhZG1pbkBtYWlsLmV4YW1wbGUuY29tMIIBIjAN
+BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAux46tRsDS/e9XvWec8GnZ9rOF6uP
++81Vwhy9A/q30zEjasTX5xm76egmllRqohbLdWJTprEF2hp9eenjEdqiAvu7LxX9
+CTKzb+c9FouWrcrwSqTUH9gGNnqw2cu1ig919nRyo43Iox4CbfgGmTa4JXIfMm9j
+gL6nwlTsOdruWxteMTUDyaJ2ix+/rJ49oKBr7/XlXvylarRZ+LLu08tc9HwxRZ1F
+Mb4xCgBGXvY5Ai6YZ9y+eJQDuNMhBYhI7ge1KXf7Dw8GYCY+W+z7aqCDBlpKQaq6
+Kz/lE9jerg9pcBTxwjxyJR/4PD/tZcnBDDSuVBRR7kH5wxCoBE/ZE9xYhQIDAQAB
+MA0GCSqGSIb3DQEBCwUAA4IBAQCrm+qHzJ8EJx1wfe09FpebXnPxGRqxytU6caeK
+ShZxLKndeDUlmdsClpBMeQtcaxRj1qQmekLABUtr/Q01/auVPngGJDSkS+WCXJ8g
+GTHZpwSe5UD5K/6NQp4Gr6wfhYTkmu+5VK7wcmSvZnZLz+TO9RLssmjP2GY6V2WU
+gDFBwPwHs6opC6XQRr6gLib460vwAsXwOpd3ZTgbW+SpuDgQK26RID58qo7Ty4Zy
+qzZenpcBpA8z61FlREhd6uoQeb48/jtkE900RiINRH4jYFXe5u63sJPZG/lMnI2c
+1zLzXt9mRzPswEWKTswQ10iCLWj5n7x130dLe+X1nNJ81U38
+-----END CERTIFICATE-----
+[san@sandell CA-DIR]$ 
+
+#########################################################################
+
+#########################################################################
+Generating certificate using a configuration file.
+#########################################################################
+
+[san@sandell CA-DIR]$ openssl ca -out ./certsdb/mail.example.com.crt -days 2920 -config ./conf/openssl_noprompt_client.cnf -extensions v3_req -infiles ./certreqs/mail.example.com.csr 
+Using configuration from ./conf/openssl_noprompt_client.cnf
+Enter pass phrase for /home/san/TEST-CA/CA-DIR/CA/private/rootCA.key:
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'IN'
+stateOrProvinceName   :ASN.1 12:'MAHARASHTRA'
+localityName          :ASN.1 12:'MUMBAI'
+organizationName      :ASN.1 12:'example.com Mail'
+organizationalUnitName:ASN.1 12:'mail'
+commonName            :ASN.1 12:'mail.example.com'
+emailAddress          :IA5STRING:'admin@mail.example.com'
+Certificate is to be certified until Feb  7 06:03:32 2026 GMT (2920 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+[san@sandell CA-DIR]$ ll ./certsdb/
+total 32
+-rw-rw-r--. 1 san san 4359 Feb  8 17:27 01.pem
+-rw-rw-r--. 1 san san 4373 Feb  9 11:33 02.pem
+-rw-rw-r--. 1 san san 4373 Feb  9 11:33 mail.example.com.crt
+-rw-rw-r--. 1 san san 4359 Feb  8 17:27 server1.example.com.crt
+[san@sandell CA-DIR]$
+[san@sandell CA-DIR]$ openssl x509 -in ./certsdb/mail.example.com.crt -text
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 2 (0x2)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=DEMO CA INC., OU=CA, CN=DEMO CA/emailAddress=mail@democa.example.com
+        Validity
+            Not Before: Feb  9 06:03:32 2018 GMT
+            Not After : Feb  7 06:03:32 2026 GMT
+        Subject: C=IN, ST=MAHARASHTRA, O=example.com Mail, OU=mail, CN=mail.example.com/emailAddress=admin@mail.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:bb:1e:3a:b5:1b:03:4b:f7:bd:5e:f5:9e:73:c1:
+                    a7:67:da:ce:17:ab:8f:fb:cd:55:c2:1c:bd:03:fa:
+                    b7:d3:31:23:6a:c4:d7:e7:19:bb:e9:e8:26:96:54:
+                    6a:a2:16:cb:75:62:53:a6:b1:05:da:1a:7d:79:e9:
+                    e3:11:da:a2:02:fb:bb:2f:15:fd:09:32:b3:6f:e7:
+                    3d:16:8b:96:ad:ca:f0:4a:a4:d4:1f:d8:06:36:7a:
+                    b0:d9:cb:b5:8a:0f:75:f6:74:72:a3:8d:c8:a3:1e:
+                    02:6d:f8:06:99:36:b8:25:72:1f:32:6f:63:80:be:
+                    a7:c2:54:ec:39:da:ee:5b:1b:5e:31:35:03:c9:a2:
+                    76:8b:1f:bf:ac:9e:3d:a0:a0:6b:ef:f5:e5:5e:fc:
+                    a5:6a:b4:59:f8:b2:ee:d3:cb:5c:f4:7c:31:45:9d:
+                    45:31:be:31:0a:00:46:5e:f6:39:02:2e:98:67:dc:
+                    be:78:94:03:b8:d3:21:05:88:48:ee:07:b5:29:77:
+                    fb:0f:0f:06:60:26:3e:5b:ec:fb:6a:a0:83:06:5a:
+                    4a:41:aa:ba:2b:3f:e5:13:d8:de:ae:0f:69:70:14:
+                    f1:c2:3c:72:25:1f:f8:3c:3f:ed:65:c9:c1:0c:34:
+                    ae:54:14:51:ee:41:f9:c3:10:a8:04:4f:d9:13:dc:
+                    58:85
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                29:AF:B2:9E:89:0E:65:49:EC:88:F2:BA:1A:94:47:14:EE:2F:EE:82
+    Signature Algorithm: sha256WithRSAEncryption
+         b8:29:3b:4b:da:19:58:2d:a2:08:b8:04:a1:5f:a5:40:83:32:
+         9f:90:ae:ab:21:6c:ba:0e:42:57:a6:ce:d7:39:3e:1e:5b:05:
+         de:51:81:04:fc:05:d7:dc:9c:7f:24:05:a9:90:1c:90:3d:40:
+         32:3d:fb:5e:15:9f:d4:f6:2c:bf:45:ce:3d:92:80:a4:6c:24:
+         f4:00:05:71:7c:6f:c4:45:06:13:7a:8b:36:ba:ec:ef:34:2e:
+         17:aa:73:93:b3:56:5c:8e:09:59:7b:74:fd:5b:12:41:04:f8:
+         cc:41:dc:93:4b:c6:a6:82:d3:d3:28:d6:8f:f7:49:de:22:cb:
+         91:a8:d3:8e:e3:a5:28:cf:61:51:2d:e2:4b:92:20:86:74:ea:
+         2f:f2:d6:64:88:00:a2:d5:17:cb:45:04:83:12:42:dc:ac:c8:
+         59:8f:16:ec:49:34:6c:80:f9:a5:31:41:1d:3c:0a:10:a4:39:
+         e4:ba:2f:27:d8:3a:c9:7e:9d:08:8a:d0:63:c8:7c:fb:6e:5f:
+         8f:c6:c3:3f:af:f9:69:7e:bb:9e:97:7c:4d:fd:b6:70:09:fd:
+         10:a0:08:89:a4:b2:d5:97:2a:fb:22:13:64:8b:36:c1:dd:6b:
+         86:c0:9c:4a:95:b6:77:42:e2:0c:74:56:9e:e7:a1:59:4e:81:
+         0c:df:1b:26
+-----BEGIN CERTIFICATE-----
+MIIDyjCCArKgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMCSU4x
+FDASBgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNVBAoM
+DERFTU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0ExJjAk
+BgkqhkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMB4XDTE4MDIwOTA2
+MDMzMloXDTI2MDIwNzA2MDMzMlowgY8xCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtN
+QUhBUkFTSFRSQTEZMBcGA1UECgwQZXhhbXBsZS5jb20gTWFpbDENMAsGA1UECwwE
+bWFpbDEZMBcGA1UEAwwQbWFpbC5leGFtcGxlLmNvbTElMCMGCSqGSIb3DQEJARYW
+YWRtaW5AbWFpbC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+AQoCggEBALseOrUbA0v3vV71nnPBp2fazherj/vNVcIcvQP6t9MxI2rE1+cZu+no
+JpZUaqIWy3ViU6axBdoafXnp4xHaogL7uy8V/Qkys2/nPRaLlq3K8Eqk1B/YBjZ6
+sNnLtYoPdfZ0cqONyKMeAm34Bpk2uCVyHzJvY4C+p8JU7Dna7lsbXjE1A8midosf
+v6yePaCga+/15V78pWq0Wfiy7tPLXPR8MUWdRTG+MQoARl72OQIumGfcvniUA7jT
+IQWISO4HtSl3+w8PBmAmPlvs+2qggwZaSkGquis/5RPY3q4PaXAU8cI8ciUf+Dw/
+7WXJwQw0rlQUUe5B+cMQqARP2RPcWIUCAwEAAaMsMCowCQYDVR0TBAIwADAdBgNV
+HQ4EFgQUKa+ynokOZUnsiPK6GpRHFO4v7oIwDQYJKoZIhvcNAQELBQADggEBALgp
+O0vaGVgtogi4BKFfpUCDMp+QrqshbLoOQlemztc5Ph5bBd5RgQT8BdfcnH8kBamQ
+HJA9QDI9+14Vn9T2LL9Fzj2SgKRsJPQABXF8b8RFBhN6iza67O80Lheqc5OzVlyO
+CVl7dP1bEkEE+MxB3JNLxqaC09Mo1o/3Sd4iy5Go047jpSjPYVEt4kuSIIZ06i/y
+1mSIAKLVF8tFBIMSQtysyFmPFuxJNGyA+aUxQR08ChCkOeS6LyfYOsl+nQiK0GPI
+fPtuX4/Gwz+v+Wl+u56XfE39tnAJ/RCgCImkstWXKvsiE2SLNsHda4bAnEqVtndC
+4gx0Vp7noVlOgQzfGyY=
+-----END CERTIFICATE-----
+[san@sandell CA-DIR]$
+-------------------------------------------------------------------------
+d. Export certificate in PKCS12 format (which also includes private key)
+-------------------------------------------------------------------------
+
+# Create a directory to strore the certificate in PKCS12 format.
+
+[san@sandell CA-DIR]$ mkdir pkcs12
+[san@sandell CA-DIR]$ ll
+total 28
+-rw-rw-r--. 1 san san    0 Feb  3 12:34 certindex.txt
+drwxrwxr-x. 2 san san 4096 Feb  3 16:33 certreqs
+drwx------. 2 san san 4096 Feb  3 16:30 certsdb
+drwxrwxr-x. 2 san san 4096 Feb  3 12:21 conf
+drwxrwxr-x. 2 san san 4096 Feb  3 11:20 crl
+drwxrwxr-x. 2 san san 4096 Feb  3 16:42 pkcs12
+drwx------. 2 san san 4096 Feb  3 15:49 private
+-rw-rw-r--. 1 san san    9 Feb  3 12:35 serial
+[san@sandell CA-DIR]$
+
+# Create pkcs12 certificate
+
+[san@sandell CA-DIR]$ openssl pkcs12 -export -in certsdb/mail.example.com.crt -inkey ./private/mail.example.com.key -passout file:./conf/mail.example.com_pswd.txt -out ./pkcs12/mail.example.com.p12
+Enter pass phrase for ./private/mail.example.com.key:
+[san@sandell CA-DIR]$ ll ./pkcs12/
+total 8
+-rw-rw-r--. 1 san san 2573 Feb  9 11:38 mail.example.com.p12
+-rw-rw-r--. 1 san san 2573 Feb  8 17:32 server1.example.com.p12
+[san@sandell CA-DIR]$ 
+
+# Verify the pkcs12 certificate
+
+[san@sandell CA-DIR]$ openssl pkcs12 -in ./pkcs12/mail.example.com.p12 -info
+Enter Import Password:
+MAC Iteration 2048
+MAC verified OK
+PKCS7 Encrypted data: pbeWithSHA1And40BitRC2-CBC, Iteration 2048
+Certificate bag
+Bag Attributes
+    localKeyID: 96 80 4A 5F FC DE 5E 33 DB F3 3A 2A 72 4E D7 39 8C 3D AD 3B 
+subject=/C=IN/ST=MAHARASHTRA/O=example.com Mail/OU=mail/CN=mail.example.com/emailAddress=admin@mail.example.com
+issuer=/C=IN/ST=MAHARASHTRA/L=MUMBAI/O=DEMO CA INC./OU=CA/CN=DEMO CA/emailAddress=mail@democa.example.com
+-----BEGIN CERTIFICATE-----
+MIIDyjCCArKgAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMCSU4x
+FDASBgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNVBAoM
+DERFTU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0ExJjAk
+BgkqhkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMB4XDTE4MDIwOTA2
+MDMzMloXDTI2MDIwNzA2MDMzMlowgY8xCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtN
+QUhBUkFTSFRSQTEZMBcGA1UECgwQZXhhbXBsZS5jb20gTWFpbDENMAsGA1UECwwE
+bWFpbDEZMBcGA1UEAwwQbWFpbC5leGFtcGxlLmNvbTElMCMGCSqGSIb3DQEJARYW
+YWRtaW5AbWFpbC5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCC
+AQoCggEBALseOrUbA0v3vV71nnPBp2fazherj/vNVcIcvQP6t9MxI2rE1+cZu+no
+JpZUaqIWy3ViU6axBdoafXnp4xHaogL7uy8V/Qkys2/nPRaLlq3K8Eqk1B/YBjZ6
+sNnLtYoPdfZ0cqONyKMeAm34Bpk2uCVyHzJvY4C+p8JU7Dna7lsbXjE1A8midosf
+v6yePaCga+/15V78pWq0Wfiy7tPLXPR8MUWdRTG+MQoARl72OQIumGfcvniUA7jT
+IQWISO4HtSl3+w8PBmAmPlvs+2qggwZaSkGquis/5RPY3q4PaXAU8cI8ciUf+Dw/
+7WXJwQw0rlQUUe5B+cMQqARP2RPcWIUCAwEAAaMsMCowCQYDVR0TBAIwADAdBgNV
+HQ4EFgQUKa+ynokOZUnsiPK6GpRHFO4v7oIwDQYJKoZIhvcNAQELBQADggEBALgp
+O0vaGVgtogi4BKFfpUCDMp+QrqshbLoOQlemztc5Ph5bBd5RgQT8BdfcnH8kBamQ
+HJA9QDI9+14Vn9T2LL9Fzj2SgKRsJPQABXF8b8RFBhN6iza67O80Lheqc5OzVlyO
+CVl7dP1bEkEE+MxB3JNLxqaC09Mo1o/3Sd4iy5Go047jpSjPYVEt4kuSIIZ06i/y
+1mSIAKLVF8tFBIMSQtysyFmPFuxJNGyA+aUxQR08ChCkOeS6LyfYOsl+nQiK0GPI
+fPtuX4/Gwz+v+Wl+u56XfE39tnAJ/RCgCImkstWXKvsiE2SLNsHda4bAnEqVtndC
+4gx0Vp7noVlOgQzfGyY=
+-----END CERTIFICATE-----
+PKCS7 Data
+Shrouded Keybag: pbeWithSHA1And3-KeyTripleDES-CBC, Iteration 2048
+Bag Attributes
+    localKeyID: 96 80 4A 5F FC DE 5E 33 DB F3 3A 2A 72 4E D7 39 8C 3D AD 3B 
+Key Attributes: <No Attributes>
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIFDjBABgkqhkiG9w0BBQ0wMzAbBgkqhkiG9w0BBQwwDgQIMnUK99GbbdkCAggA
+MBQGCCqGSIb3DQMHBAjsbOP2hzaw6ASCBMgmE9WAslrK9h4ewWzTTfOmU+l+sqiQ
+puoA1WceDEuZ4EmwPly02T2cmo+5muDaW6PWKHwoAloh9MeMRTK201o49D6oWc/d
+jTyTBslWecr7Fnp34TaynHeNHj6ERQC9qWIELV6OS7GBBvMCdDUK/7l6BtIBynt9
+jZ/D9HNd675nsiKQxacwoJMIourOCS9ScOa1eEl+05EpuujLE24jLbw05VY7iMFH
+JkHgTCAACikBv7vo5X9Qetyz0Sb/P5wTt1ct+vwdS3Z7m5Y+0rmbaP3lHTVzabvl
+mQusJK/uGThLS0MI822foIGcrzhAsd3dxNidlmXZQNGYj+6ngws9qyRDZjTwKxye
+SBj8bdRrVYFK8qfwe27r6ktm5GreMcQUqUj2lHqY0AZjKieDY885xqniwA4bumJs
+QGgJf9j3fa7ppfDprRrlvfoICnqDGruGr5c8dMCDou9NYcXOjdoAd78mc2ZIJVV7
+ZzAffD9n3vJfjFvRS8/G4NUfaAok0l3VQ6JeAb+/Y4HivaXcZasFCPLfLFWSNLCM
+C6zw68YQSRyV1Ryr8SbIUa7YXCvDHX/oUvT4E2LjtpuHc7tVa4AMPcvQBEeMoZnJ
+26BXS1KkvocUE5J1douNWO1+lRwP80Luv8yAdDrKyspY6zSEBboJBQ5L2o5rfVX1
+U4rsO0Wt+9225JCZPdQvxv9hCokMdxD4ELZNLjiduBPARhOlhUQwdJtjuCWH+Rbk
+JIQ+1dgT+IDf2jWEMW9EOTulGCRcFVT/cat+kVSZhRINgeCkLx5YnR8MF3tkP5MK
+LRekb++GUwSvrJ1DXzVzL4ZD8arhWuuVEUTeehRvIf8PqR66cTKFpI0BG7/Khp5a
+Ak1jpARMv//FA5pXY7yCH29j6Hnm+8Z1QZ/XQATQw/Q/HOTbVIl1G2MRrTycwRIL
+72PN+6zMoMOC3cPm9chhjic/QGyUSnDyH9mF9I4avzRtaJ+6X5FNHbioFafivNCO
+vDfkvALI05JVND5/WhhWyE+1wVYKlF6Yq6e0zBmOoEEAHG/QriEmjcgh/bAWjdxF
+oj9NiFSVG0wwYf58mYGIpESySeqQBCEPy3O1e5187LbP5EpoHtR8Tq1ZzAGIy1kn
+gyOsP3oMjkTzosKbl/jkrPNHyEtjan9AKLIRuLFgsV7WYwT+AJ50OEeUYCzoXQbS
+F6Wn3lpl6o1l8mroaB7XpG8Y4/E6JeUQ4GNTNSCXukDUG4XdTsubUJgvJxoBZSrC
+//FoO3tQxm4u8MKzGqNMUbaqTpeNht/hbnpX1EgrDerD82CcsNJF4wHujsucYbwb
+StZxNSuEpVpae9/tOkj+SnyJ3z8Bo9G8w8fEptC0pG7sgH18HzsUnZAl2Y3pxLvh
+1fBy/+5XVhr96M5kSWZuz3GGqfLHgo1Nich0Ol36/3olZFnhvKU3zPFSGE7NVpQn
+OnYzFafHJ8N8YsYK1j8l/yT9TpPpCs81FbBqc6pOGV0VHxoTJ+RJcC77LWQJa9oS
+MlmXcf2VoAvrz+ld4RPpPtndt0DKpWtFd3CRvq/sBtKAv3q/eLlvoNDia2WAQlE1
+ogN2k+8q+A9eG0DXWoKGeAk2snF/pcgbF1smgpvHhIBlTMKbPT0ABT/c0xvPdjoZ
+MDE=
+-----END ENCRYPTED PRIVATE KEY-----
+[san@sandell CA-DIR]$ 
+
+ 
+-----------------------------------------------------------------
+4. Similarly create a certificate for a server (server1.example.com).
+-----------------------------------------------------------------
+
+a. Private key for server1.example.com
+
+[san@sandell CA-DIR]$ 
+Generating RSA private key, 2048 bit long modulus
+................................................................................................+++
+............................................................................+++
+e is 65537 (0x10001)
+Enter pass phrase for ./private/server1.example.com.key:
+Verifying - Enter pass phrase for ./private/server1.example.com.key:
+[san@sandell CA-DIR]$ ll ./private/
+total 12
+-rw-rw-r--. 1 san san 1751 Feb  3 15:49 mail.example.com.key
+-rwx------. 1 san san 1751 Feb  3 12:37 rootCA.key
+-rw-rw-r--. 1 san san 1751 Feb  6 12:17 server1.example.com.key
+
+b. Verify key
+
+[san@sandell CA-DIR]$ openssl pkey -in ./private/server1.example.com.key -text
+Enter pass phrase for ./private/server1.example.com.key:
+-----BEGIN PRIVATE KEY-----
+MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDWhMi7brcF1FCM
+T7mGucF0SadBxbaNjB4fbGoaCCXvU/G8ux9i/8oW/YHHE49cUCq2bT47AHSQDVsF
+5r7dGk/bVoUpfWH+869a67dnbC2OCYSlumK8XLMlxjcjtA5YAG3jiWIVrGAHot+7
+8p0JcP6gjZdkSQveNm7VzZ0thDGuurmUI//Cc6R5ENqmnKEtV2UanodxLLgT9IfK
+b8smp3RFxqb4c4l2juJ+SKBkJIacu+USduoeSyYQHq1e+Oi0TayEnaakwyUCI7uY
+YQlxYjA9pBoN9D+xmyO/d7ZNDBbmmJElGhygEpQX7LePjTQUbKVQyL98q7r+Rlmd
+bOIMn5FTAgMBAAECggEBAM4m+1UMt/x1JhdBQpTTjLL5WTAfFil/Py+Jm4l6zSHr
+NQPfe/FCye5AH2i2Rm47aGC6KTTAYkRRYWkRb9jBwX6S7hOKOBOwEZO5tR5B2qGG
+SiCONva3yz4A99pq3eH6P6CL1WPorLyJ7KMNK5b4LOsURyoL/MjG3MrA90zXnns/
+mbHNiOllprQNRrwF/HjZ/juQJiTvLOrLn5LFJChXm++eBMlbmOnYJ2/j43lk0xb8
+9jx73Zfmk7MN5TciskSeRgmnb7AFSpBR3S11SWP6rVWj2LoMaq6E8Nlmwx24D23a
+5l66D6gcZGhYKevpfiwF+9zDvL7NCepta5SawYVys1ECgYEA9vUkL/oAP9K8KPTn
+Yv2UVdT75RqFHxke59UhA5qPc/rEgkDL05ahxWsllDZbRwk9tykfBKhJGU7c0/F7
+fmM4EXXyfYnTgeWmKPqOg4HcRUWZbpdAsNq0vL9GwMUDP200eofLNXc4CvIlLyEP
+I1PWkHRxhb5Mk+WwFE8iUB9vvakCgYEA3l+TmADPUgbCGuE1m9enOmqvAywDtXDr
+o0op+D2Xwhb2wrUXwNf1h8w9IBUnGL4aZdHjttTbhaEBXZRl0nD7awl53L5apYgI
+eGGpowWMrzAUyhiHiLr+QbWqjZQNnfy6koqHB/YOglku/87ZVZLxYjabh/RqxEsF
+SUj7PQi3XJsCgYEAruTrbOLDfG+0+9h9ahimDadZgWYnst9qiMrip5e1UnDc7FYR
+Q9bg2FxKb82TFRrRTz7bDcRUiIzWTW8ug1KnKY57XjbWyJ6n70uK1E2KfrCMucp6
+cQVijG12IR0lcKzZRpGW81VsJixY8yiZfO5p/UHKB+q+dttquOdWKKIq04kCgYAy
+R2X1vmkh4MlOjpEydWYoPSrpCrCj+64rs38d079WcR7GE3AVeD7Zv4IqmN3IKGOL
+lhNoqWQhKLBIWl9TX5xZLUFSee/A8asInPxgEccnbTWmJDmw3qbScKLpdApIKHZ+
+37d8Q1QwgL2xtTFKufi9/h7YdJkXXOcLFOdJe4kJ9QKBgQDe+VpAnQ1KaOXVnR1i
+AZpymjIjOIuFTwWGp30YncrlqyqOgMqFkID0T5BJeDXWKn90LVJ/bTCFp6RbZS0S
+Yswp2hmz6rV/EcFGKHZdlooiYcjoU8agPnAYnCY8q3bYpoykIr0p2WpmSDQmtevs
+2L5pb9J42pobwzps29pEQhJVKg==
+-----END PRIVATE KEY-----
+Private-Key: (2048 bit)
+modulus:
+    00:d6:84:c8:bb:6e:b7:05:d4:50:8c:4f:b9:86:b9:
+    c1:74:49:a7:41:c5:b6:8d:8c:1e:1f:6c:6a:1a:08:
+    25:ef:53:f1:bc:bb:1f:62:ff:ca:16:fd:81:c7:13:
+    8f:5c:50:2a:b6:6d:3e:3b:00:74:90:0d:5b:05:e6:
+    be:dd:1a:4f:db:56:85:29:7d:61:fe:f3:af:5a:eb:
+    b7:67:6c:2d:8e:09:84:a5:ba:62:bc:5c:b3:25:c6:
+    37:23:b4:0e:58:00:6d:e3:89:62:15:ac:60:07:a2:
+    df:bb:f2:9d:09:70:fe:a0:8d:97:64:49:0b:de:36:
+    6e:d5:cd:9d:2d:84:31:ae:ba:b9:94:23:ff:c2:73:
+    a4:79:10:da:a6:9c:a1:2d:57:65:1a:9e:87:71:2c:
+    b8:13:f4:87:ca:6f:cb:26:a7:74:45:c6:a6:f8:73:
+    89:76:8e:e2:7e:48:a0:64:24:86:9c:bb:e5:12:76:
+    ea:1e:4b:26:10:1e:ad:5e:f8:e8:b4:4d:ac:84:9d:
+    a6:a4:c3:25:02:23:bb:98:61:09:71:62:30:3d:a4:
+    1a:0d:f4:3f:b1:9b:23:bf:77:b6:4d:0c:16:e6:98:
+    91:25:1a:1c:a0:12:94:17:ec:b7:8f:8d:34:14:6c:
+    a5:50:c8:bf:7c:ab:ba:fe:46:59:9d:6c:e2:0c:9f:
+    91:53
+publicExponent: 65537 (0x10001)
+privateExponent:
+    00:ce:26:fb:55:0c:b7:fc:75:26:17:41:42:94:d3:
+    8c:b2:f9:59:30:1f:16:29:7f:3f:2f:89:9b:89:7a:
+    cd:21:eb:35:03:df:7b:f1:42:c9:ee:40:1f:68:b6:
+    46:6e:3b:68:60:ba:29:34:c0:62:44:51:61:69:11:
+    6f:d8:c1:c1:7e:92:ee:13:8a:38:13:b0:11:93:b9:
+    b5:1e:41:da:a1:86:4a:20:8e:36:f6:b7:cb:3e:00:
+    f7:da:6a:dd:e1:fa:3f:a0:8b:d5:63:e8:ac:bc:89:
+    ec:a3:0d:2b:96:f8:2c:eb:14:47:2a:0b:fc:c8:c6:
+    dc:ca:c0:f7:4c:d7:9e:7b:3f:99:b1:cd:88:e9:65:
+    a6:b4:0d:46:bc:05:fc:78:d9:fe:3b:90:26:24:ef:
+    2c:ea:cb:9f:92:c5:24:28:57:9b:ef:9e:04:c9:5b:
+    98:e9:d8:27:6f:e3:e3:79:64:d3:16:fc:f6:3c:7b:
+    dd:97:e6:93:b3:0d:e5:37:22:b2:44:9e:46:09:a7:
+    6f:b0:05:4a:90:51:dd:2d:75:49:63:fa:ad:55:a3:
+    d8:ba:0c:6a:ae:84:f0:d9:66:c3:1d:b8:0f:6d:da:
+    e6:5e:ba:0f:a8:1c:64:68:58:29:eb:e9:7e:2c:05:
+    fb:dc:c3:bc:be:cd:09:ea:6d:6b:94:9a:c1:85:72:
+    b3:51
+prime1:
+    00:f6:f5:24:2f:fa:00:3f:d2:bc:28:f4:e7:62:fd:
+    94:55:d4:fb:e5:1a:85:1f:19:1e:e7:d5:21:03:9a:
+    8f:73:fa:c4:82:40:cb:d3:96:a1:c5:6b:25:94:36:
+    5b:47:09:3d:b7:29:1f:04:a8:49:19:4e:dc:d3:f1:
+    7b:7e:63:38:11:75:f2:7d:89:d3:81:e5:a6:28:fa:
+    8e:83:81:dc:45:45:99:6e:97:40:b0:da:b4:bc:bf:
+    46:c0:c5:03:3f:6d:34:7a:87:cb:35:77:38:0a:f2:
+    25:2f:21:0f:23:53:d6:90:74:71:85:be:4c:93:e5:
+    b0:14:4f:22:50:1f:6f:bd:a9
+prime2:
+    00:de:5f:93:98:00:cf:52:06:c2:1a:e1:35:9b:d7:
+    a7:3a:6a:af:03:2c:03:b5:70:eb:a3:4a:29:f8:3d:
+    97:c2:16:f6:c2:b5:17:c0:d7:f5:87:cc:3d:20:15:
+    27:18:be:1a:65:d1:e3:b6:d4:db:85:a1:01:5d:94:
+    65:d2:70:fb:6b:09:79:dc:be:5a:a5:88:08:78:61:
+    a9:a3:05:8c:af:30:14:ca:18:87:88:ba:fe:41:b5:
+    aa:8d:94:0d:9d:fc:ba:92:8a:87:07:f6:0e:82:59:
+    2e:ff:ce:d9:55:92:f1:62:36:9b:87:f4:6a:c4:4b:
+    05:49:48:fb:3d:08:b7:5c:9b
+exponent1:
+    00:ae:e4:eb:6c:e2:c3:7c:6f:b4:fb:d8:7d:6a:18:
+    a6:0d:a7:59:81:66:27:b2:df:6a:88:ca:e2:a7:97:
+    b5:52:70:dc:ec:56:11:43:d6:e0:d8:5c:4a:6f:cd:
+    93:15:1a:d1:4f:3e:db:0d:c4:54:88:8c:d6:4d:6f:
+    2e:83:52:a7:29:8e:7b:5e:36:d6:c8:9e:a7:ef:4b:
+    8a:d4:4d:8a:7e:b0:8c:b9:ca:7a:71:05:62:8c:6d:
+    76:21:1d:25:70:ac:d9:46:91:96:f3:55:6c:26:2c:
+    58:f3:28:99:7c:ee:69:fd:41:ca:07:ea:be:76:db:
+    6a:b8:e7:56:28:a2:2a:d3:89
+exponent2:
+    32:47:65:f5:be:69:21:e0:c9:4e:8e:91:32:75:66:
+    28:3d:2a:e9:0a:b0:a3:fb:ae:2b:b3:7f:1d:d3:bf:
+    56:71:1e:c6:13:70:15:78:3e:d9:bf:82:2a:98:dd:
+    c8:28:63:8b:96:13:68:a9:64:21:28:b0:48:5a:5f:
+    53:5f:9c:59:2d:41:52:79:ef:c0:f1:ab:08:9c:fc:
+    60:11:c7:27:6d:35:a6:24:39:b0:de:a6:d2:70:a2:
+    e9:74:0a:48:28:76:7e:df:b7:7c:43:54:30:80:bd:
+    b1:b5:31:4a:b9:f8:bd:fe:1e:d8:74:99:17:5c:e7:
+    0b:14:e7:49:7b:89:09:f5
+coefficient:
+    00:de:f9:5a:40:9d:0d:4a:68:e5:d5:9d:1d:62:01:
+    9a:72:9a:32:23:38:8b:85:4f:05:86:a7:7d:18:9d:
+    ca:e5:ab:2a:8e:80:ca:85:90:80:f4:4f:90:49:78:
+    35:d6:2a:7f:74:2d:52:7f:6d:30:85:a7:a4:5b:65:
+    2d:12:62:cc:29:da:19:b3:ea:b5:7f:11:c1:46:28:
+    76:5d:96:8a:22:61:c8:e8:53:c6:a0:3e:70:18:9c:
+    26:3c:ab:76:d8:a6:8c:a4:22:bd:29:d9:6a:66:48:
+    34:26:b5:eb:ec:d8:be:69:6f:d2:78:da:9a:1b:c3:
+    3a:6c:db:da:44:42:12:55:2a
+[san@sandell CA-DIR]$
+
+c. Generate CSR
+
+[san@sandell CA-DIR]$ 
+Enter pass phrase for ./private/server1.example.com.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [XX]:IN
+State or Province Name (full name) []:MAHARASHTRA
+Locality Name (eg, city) [Default City]:MUMBAI
+Organization Name (eg, company) [Default Company Ltd]:SERVER1
+Organizational Unit Name (eg, section) []:HR
+Common Name (eg, your name or your server's hostname) []:server1.example.com
+Email Address []:mail@server1.example.com 
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:server1
+An optional company name []:
+[san@sandell CA-DIR]$ 
+
+[san@sandell CA-DIR]$ ll ./certreqs/
+total 8
+-rw-rw-r--. 1 san san 1115 Feb  3 16:33 mail.example.com.csr
+-rw-rw-r--. 1 san san 1106 Feb  6 12:24 server1.example.com.csr
+[san@sandell CA-DIR]$
+
+d. Verify CSR
+
+[san@sandell CA-DIR]$ openssl req -in ./certreqs/server1.example.com.csr -text
+Certificate Request:
+    Data:
+        Version: 0 (0x0)
+        Subject: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=SERVER1, OU=HR, CN=server1.example.com/emailAddress=mail@server1.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:d6:84:c8:bb:6e:b7:05:d4:50:8c:4f:b9:86:b9:
+                    c1:74:49:a7:41:c5:b6:8d:8c:1e:1f:6c:6a:1a:08:
+                    25:ef:53:f1:bc:bb:1f:62:ff:ca:16:fd:81:c7:13:
+                    8f:5c:50:2a:b6:6d:3e:3b:00:74:90:0d:5b:05:e6:
+                    be:dd:1a:4f:db:56:85:29:7d:61:fe:f3:af:5a:eb:
+                    b7:67:6c:2d:8e:09:84:a5:ba:62:bc:5c:b3:25:c6:
+                    37:23:b4:0e:58:00:6d:e3:89:62:15:ac:60:07:a2:
+                    df:bb:f2:9d:09:70:fe:a0:8d:97:64:49:0b:de:36:
+                    6e:d5:cd:9d:2d:84:31:ae:ba:b9:94:23:ff:c2:73:
+                    a4:79:10:da:a6:9c:a1:2d:57:65:1a:9e:87:71:2c:
+                    b8:13:f4:87:ca:6f:cb:26:a7:74:45:c6:a6:f8:73:
+                    89:76:8e:e2:7e:48:a0:64:24:86:9c:bb:e5:12:76:
+                    ea:1e:4b:26:10:1e:ad:5e:f8:e8:b4:4d:ac:84:9d:
+                    a6:a4:c3:25:02:23:bb:98:61:09:71:62:30:3d:a4:
+                    1a:0d:f4:3f:b1:9b:23:bf:77:b6:4d:0c:16:e6:98:
+                    91:25:1a:1c:a0:12:94:17:ec:b7:8f:8d:34:14:6c:
+                    a5:50:c8:bf:7c:ab:ba:fe:46:59:9d:6c:e2:0c:9f:
+                    91:53
+                Exponent: 65537 (0x10001)
+        Attributes:
+            challengePassword        :unable to print attribute
+    Signature Algorithm: sha1WithRSAEncryption
+         57:04:9e:65:fe:e9:11:bc:08:12:6e:e0:6d:6c:6c:a0:17:27:
+         de:28:cf:39:ad:71:a6:fa:f2:6c:89:86:36:98:a6:71:43:ab:
+         17:69:9c:47:65:72:3e:be:12:6f:3c:a7:54:a1:27:ec:4d:52:
+         7a:51:64:0a:a2:da:f1:a5:6d:bd:d1:64:90:17:75:99:70:b4:
+         ef:15:e7:4a:8a:73:7f:4d:07:19:1a:1c:ad:c2:fb:5a:9e:02:
+         1c:82:bb:64:2c:95:38:cd:e7:59:e4:f8:e9:e3:46:84:8c:81:
+         96:04:78:eb:47:ed:bf:a9:f6:b0:7a:57:cb:be:5c:d5:1b:6a:
+         53:51:80:99:a2:8c:85:d5:f3:e0:82:86:71:02:67:02:3e:72:
+         c1:1f:93:c8:70:d4:55:83:ec:71:3a:95:00:c9:98:7c:93:fc:
+         f1:7c:2b:21:98:f3:84:d5:14:e3:11:85:c6:0a:5d:c1:0b:04:
+         40:fa:49:bf:a2:08:49:75:be:ff:a1:76:d9:93:26:0c:26:f5:
+         6f:ce:17:3c:b5:93:dc:aa:3d:fa:df:cb:a1:37:d9:f1:ab:cb:
+         87:6b:eb:da:d0:a6:cd:d1:49:42:6a:b2:a3:d7:0a:93:75:da:
+         3e:4c:16:76:84:d3:9f:fa:cd:eb:e1:67:51:c4:1d:ef:ac:19:
+         60:37:89:ed
+-----BEGIN CERTIFICATE REQUEST-----
+MIIC+DCCAeACAQAwgZoxCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtNQUhBUkFTSFRS
+QTEPMA0GA1UEBwwGTVVNQkFJMRAwDgYDVQQKDAdTRVJWRVIxMQswCQYDVQQLDAJI
+UjEcMBoGA1UEAwwTc2VydmVyMS5leGFtcGxlLmNvbTEnMCUGCSqGSIb3DQEJARYY
+bWFpbEBzZXJ2ZXIxLmV4YW1wbGUuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A
+MIIBCgKCAQEA1oTIu263BdRQjE+5hrnBdEmnQcW2jYweH2xqGggl71PxvLsfYv/K
+Fv2BxxOPXFAqtm0+OwB0kA1bBea+3RpP21aFKX1h/vOvWuu3Z2wtjgmEpbpivFyz
+JcY3I7QOWABt44liFaxgB6Lfu/KdCXD+oI2XZEkL3jZu1c2dLYQxrrq5lCP/wnOk
+eRDappyhLVdlGp6HcSy4E/SHym/LJqd0Rcam+HOJdo7ifkigZCSGnLvlEnbqHksm
+EB6tXvjotE2shJ2mpMMlAiO7mGEJcWIwPaQaDfQ/sZsjv3e2TQwW5piRJRocoBKU
+F+y3j400FGylUMi/fKu6/kZZnWziDJ+RUwIDAQABoBgwFgYJKoZIhvcNAQkHMQkM
+B3NlcnZlcjEwDQYJKoZIhvcNAQEFBQADggEBAFcEnmX+6RG8CBJu4G1sbKAXJ94o
+zzmtcab68myJhjaYpnFDqxdpnEdlcj6+Em88p1ShJ+xNUnpRZAqi2vGlbb3RZJAX
+dZlwtO8V50qKc39NBxkaHK3C+1qeAhyCu2QslTjN51nk+OnjRoSMgZYEeOtH7b+p
+9rB6V8u+XNUbalNRgJmijIXV8+CChnECZwI+csEfk8hw1FWD7HE6lQDJmHyT/PF8
+KyGY84TVFOMRhcYKXcELBED6Sb+iCEl1vv+hdtmTJgwm9W/OFzy1k9yqPfrfy6E3
+2fGry4dr69rQps3RSUJqsqPXCpN12j5MFnaE05/6zevhZ1HEHe+sGWA3ie0=
+-----END CERTIFICATE REQUEST-----
+[san@sandell CA-DIR]$
+
+e. Sign the CSR and create the certificate
+
+[san@sandell CA-DIR]$ [san@sandell CA-DIR]$ openssl ca -out ./certsdb/server1.example.com.crt -days 2920 -config ./conf/openssl_noprompt_client.cnf -extensions v3_req -infiles ./certreqs/server1.example.com.csr 
+Using configuration from ./conf/openssl_noprompt_client.cnf
+Enter pass phrase for /home/san/TEST-CA/CA-DIR/private/rootCA.key:
+Check that the request matches the signature
+Signature ok
+The Subject's Distinguished Name is as follows
+countryName           :PRINTABLE:'IN'
+stateOrProvinceName   :ASN.1 12:'MAHARASHTRA'
+localityName          :ASN.1 12:'MUMBAI'
+organizationName      :ASN.1 12:'SERVER1'
+organizationalUnitName:ASN.1 12:'HR'
+commonName            :ASN.1 12:'server1.example.com'
+emailAddress          :IA5STRING:'mail@server1.example.com'
+Certificate is to be certified until Feb  6 11:57:39 2026 GMT (2920 days)
+Sign the certificate? [y/n]:y
+
+
+1 out of 1 certificate requests certified, commit? [y/n]y
+Write out database with 1 new entries
+Data Base Updated
+[san@sandell CA-DIR]$
+[san@sandell CA-DIR]$ ll ./certsdb/
+total 24
+-rw-rw-r--. 1 san san 4359 Feb  8 17:27 01.pem
+-rw-rw-r--. 1 san san 1338 Feb  3 16:35 mail.example.com.crt
+-rw-rw-r--. 1 san san 1440 Feb  3 13:11 rootCA.pem
+-rw-rw-r--. 1 san san 4359 Feb  8 17:27 server1.example.com.crt
+[san@sandell CA-DIR]$
+
+f. Verify the certificate.
+
+[san@sandell CA-DIR]$ openssl x509 -in ./certsdb/server1.example.com.crt -textCertificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 1 (0x1)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=IN, ST=MAHARASHTRA, L=MUMBAI, O=DEMO CA INC., OU=CA, CN=DEMO CA/emailAddress=mail@democa.example.com
+        Validity
+            Not Before: Feb  8 11:57:39 2018 GMT
+            Not After : Feb  6 11:57:39 2026 GMT
+        Subject: C=IN, ST=MAHARASHTRA, O=SERVER1, OU=HR, CN=server1.example.com/emailAddress=mail@server1.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:d6:84:c8:bb:6e:b7:05:d4:50:8c:4f:b9:86:b9:
+                    c1:74:49:a7:41:c5:b6:8d:8c:1e:1f:6c:6a:1a:08:
+                    25:ef:53:f1:bc:bb:1f:62:ff:ca:16:fd:81:c7:13:
+                    8f:5c:50:2a:b6:6d:3e:3b:00:74:90:0d:5b:05:e6:
+                    be:dd:1a:4f:db:56:85:29:7d:61:fe:f3:af:5a:eb:
+                    b7:67:6c:2d:8e:09:84:a5:ba:62:bc:5c:b3:25:c6:
+                    37:23:b4:0e:58:00:6d:e3:89:62:15:ac:60:07:a2:
+                    df:bb:f2:9d:09:70:fe:a0:8d:97:64:49:0b:de:36:
+                    6e:d5:cd:9d:2d:84:31:ae:ba:b9:94:23:ff:c2:73:
+                    a4:79:10:da:a6:9c:a1:2d:57:65:1a:9e:87:71:2c:
+                    b8:13:f4:87:ca:6f:cb:26:a7:74:45:c6:a6:f8:73:
+                    89:76:8e:e2:7e:48:a0:64:24:86:9c:bb:e5:12:76:
+                    ea:1e:4b:26:10:1e:ad:5e:f8:e8:b4:4d:ac:84:9d:
+                    a6:a4:c3:25:02:23:bb:98:61:09:71:62:30:3d:a4:
+                    1a:0d:f4:3f:b1:9b:23:bf:77:b6:4d:0c:16:e6:98:
+                    91:25:1a:1c:a0:12:94:17:ec:b7:8f:8d:34:14:6c:
+                    a5:50:c8:bf:7c:ab:ba:fe:46:59:9d:6c:e2:0c:9f:
+                    91:53
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Key Identifier: 
+                01:CD:41:6F:77:66:07:AF:8B:C8:8C:FC:E0:95:8D:C5:EE:71:C5:A4
+    Signature Algorithm: sha256WithRSAEncryption
+         8c:6e:6b:f6:5e:2f:e4:77:98:cc:b1:2a:06:a0:8c:6b:22:0e:
+         de:57:6b:64:e4:b1:36:8c:fe:71:7a:4c:96:d6:be:df:d3:c6:
+         b6:de:a3:87:bc:d8:a4:de:0d:63:cb:58:f5:4f:92:45:f6:6d:
+         d1:a0:c0:da:17:29:1e:ca:fc:06:cb:e3:c8:0c:b3:d4:fc:1e:
+         49:81:1b:17:a8:d7:74:cf:a7:69:0c:77:95:05:01:2e:95:15:
+         0c:0c:27:d1:1b:9d:88:1b:b4:83:be:43:05:b9:c6:31:8a:59:
+         8b:33:d4:be:e4:88:47:71:34:45:60:90:d3:7c:e7:68:23:60:
+         23:ce:18:9a:e2:4d:52:4e:a6:e6:dc:ca:d1:9f:ae:3a:f1:2f:
+         02:b2:ee:d6:08:06:1c:10:f0:ad:7b:62:65:d2:b6:6a:38:c0:
+         85:82:32:84:d6:d5:c5:90:37:2d:9f:0e:f0:c4:9d:d0:4b:2b:
+         f0:48:0e:30:3b:99:ef:ca:2f:8a:af:e1:ef:3a:88:8f:06:04:
+         f8:f3:98:45:67:1a:86:59:38:58:d8:62:0a:8b:16:1a:e3:9f:
+         1f:23:51:dc:10:df:2a:d2:b5:fc:02:c4:c3:e0:3a:77:e2:ca:
+         c4:70:b8:93:5a:40:ad:5b:c5:49:5f:3d:7f:09:74:af:6e:1d:
+         e1:0a:51:4c
+-----BEGIN CERTIFICATE-----
+MIIDxDCCAqygAwIBAgIBATANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMCSU4x
+FDASBgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNVBAoM
+DERFTU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0ExJjAk
+BgkqhkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMB4XDTE4MDIwODEx
+NTczOVoXDTI2MDIwNjExNTczOVowgYkxCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtN
+QUhBUkFTSFRSQTEQMA4GA1UECgwHU0VSVkVSMTELMAkGA1UECwwCSFIxHDAaBgNV
+BAMME3NlcnZlcjEuZXhhbXBsZS5jb20xJzAlBgkqhkiG9w0BCQEWGG1haWxAc2Vy
+dmVyMS5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+ANaEyLtutwXUUIxPuYa5wXRJp0HFto2MHh9sahoIJe9T8by7H2L/yhb9gccTj1xQ
+KrZtPjsAdJANWwXmvt0aT9tWhSl9Yf7zr1rrt2dsLY4JhKW6YrxcsyXGNyO0DlgA
+beOJYhWsYAei37vynQlw/qCNl2RJC942btXNnS2EMa66uZQj/8JzpHkQ2qacoS1X
+ZRqeh3EsuBP0h8pvyyandEXGpvhziXaO4n5IoGQkhpy75RJ26h5LJhAerV746LRN
+rISdpqTDJQIju5hhCXFiMD2kGg30P7GbI793tk0MFuaYkSUaHKASlBfst4+NNBRs
+pVDIv3yruv5GWZ1s4gyfkVMCAwEAAaMsMCowCQYDVR0TBAIwADAdBgNVHQ4EFgQU
+Ac1Bb3dmB6+LyIz84JWNxe5xxaQwDQYJKoZIhvcNAQELBQADggEBAIxua/ZeL+R3
+mMyxKgagjGsiDt5Xa2TksTaM/nF6TJbWvt/Txrbeo4e82KTeDWPLWPVPkkX2bdGg
+wNoXKR7K/AbL48gMs9T8HkmBGxeo13TPp2kMd5UFAS6VFQwMJ9EbnYgbtIO+QwW5
+xjGKWYsz1L7kiEdxNEVgkNN852gjYCPOGJriTVJOpubcytGfrjrxLwKy7tYIBhwQ
+8K17YmXStmo4wIWCMoTW1cWQNy2fDvDEndBLK/BIDjA7me/KL4qv4e86iI8GBPjz
+mEVnGoZZOFjYYgqLFhrjnx8jUdwQ3yrStfwCxMPgOnfiysRwuJNaQK1bxUlfPX8J
+dK9uHeEKUUw=
+-----END CERTIFICATE-----
+[san@sandell CA-DIR]$ 
+
+g. Export certificate in PKCS12 format (which also includes private key)
+
+[san@sandell CA-DIR]$ openssl pkcs12 -export -in certsdb/server1.example.com.crt -inkey ./private/server1.example.com.key -passout file:./conf/server1.example.com_pswd.txt -out ./pkcs12/server1.example.com.p12
+Enter pass phrase for ./private/server1.example.com.key:
+[san@sandell CA-DIR]$
+[san@sandell CA-DIR]$ ll ./pkcs12/
+total 8
+-rw-rw-r--. 1 san san 2549 Feb  3 17:04 mail.example.com.p12
+-rw-rw-r--. 1 san san 2573 Feb  8 17:32 server1.example.com.p12
+[san@sandell CA-DIR]$
+
+h. Verify certificate in PKCS12 format
+
+[san@sandell CA-DIR]$ openssl pkcs12 -in ./pkcs12/server1.example.com.p12 -info
+Enter Import Password:
+MAC Iteration 2048
+MAC verified OK
+PKCS7 Encrypted data: pbeWithSHA1And40BitRC2-CBC, Iteration 2048
+Certificate bag
+Bag Attributes
+    localKeyID: 21 12 51 D6 4F 3D 77 0D 34 52 D9 E2 56 C3 0D EF 63 8E B5 CB 
+subject=/C=IN/ST=MAHARASHTRA/O=SERVER1/OU=HR/CN=server1.example.com/emailAddress=mail@server1.example.com
+issuer=/C=IN/ST=MAHARASHTRA/L=MUMBAI/O=DEMO CA INC./OU=CA/CN=DEMO CA/emailAddress=mail@democa.example.com
+-----BEGIN CERTIFICATE-----
+MIIDxDCCAqygAwIBAgIBATANBgkqhkiG9w0BAQsFADCBkjELMAkGA1UEBhMCSU4x
+FDASBgNVBAgMC01BSEFSQVNIVFJBMQ8wDQYDVQQHDAZNVU1CQUkxFTATBgNVBAoM
+DERFTU8gQ0EgSU5DLjELMAkGA1UECwwCQ0ExEDAOBgNVBAMMB0RFTU8gQ0ExJjAk
+BgkqhkiG9w0BCQEWF21haWxAZGVtb2NhLmV4YW1wbGUuY29tMB4XDTE4MDIwODEx
+NTczOVoXDTI2MDIwNjExNTczOVowgYkxCzAJBgNVBAYTAklOMRQwEgYDVQQIDAtN
+QUhBUkFTSFRSQTEQMA4GA1UECgwHU0VSVkVSMTELMAkGA1UECwwCSFIxHDAaBgNV
+BAMME3NlcnZlcjEuZXhhbXBsZS5jb20xJzAlBgkqhkiG9w0BCQEWGG1haWxAc2Vy
+dmVyMS5leGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+ANaEyLtutwXUUIxPuYa5wXRJp0HFto2MHh9sahoIJe9T8by7H2L/yhb9gccTj1xQ
+KrZtPjsAdJANWwXmvt0aT9tWhSl9Yf7zr1rrt2dsLY4JhKW6YrxcsyXGNyO0DlgA
+beOJYhWsYAei37vynQlw/qCNl2RJC942btXNnS2EMa66uZQj/8JzpHkQ2qacoS1X
+ZRqeh3EsuBP0h8pvyyandEXGpvhziXaO4n5IoGQkhpy75RJ26h5LJhAerV746LRN
+rISdpqTDJQIju5hhCXFiMD2kGg30P7GbI793tk0MFuaYkSUaHKASlBfst4+NNBRs
+pVDIv3yruv5GWZ1s4gyfkVMCAwEAAaMsMCowCQYDVR0TBAIwADAdBgNVHQ4EFgQU
+Ac1Bb3dmB6+LyIz84JWNxe5xxaQwDQYJKoZIhvcNAQELBQADggEBAIxua/ZeL+R3
+mMyxKgagjGsiDt5Xa2TksTaM/nF6TJbWvt/Txrbeo4e82KTeDWPLWPVPkkX2bdGg
+wNoXKR7K/AbL48gMs9T8HkmBGxeo13TPp2kMd5UFAS6VFQwMJ9EbnYgbtIO+QwW5
+xjGKWYsz1L7kiEdxNEVgkNN852gjYCPOGJriTVJOpubcytGfrjrxLwKy7tYIBhwQ
+8K17YmXStmo4wIWCMoTW1cWQNy2fDvDEndBLK/BIDjA7me/KL4qv4e86iI8GBPjz
+mEVnGoZZOFjYYgqLFhrjnx8jUdwQ3yrStfwCxMPgOnfiysRwuJNaQK1bxUlfPX8J
+dK9uHeEKUUw=
+-----END CERTIFICATE-----
+PKCS7 Data
+Shrouded Keybag: pbeWithSHA1And3-KeyTripleDES-CBC, Iteration 2048
+Bag Attributes
+    localKeyID: 21 12 51 D6 4F 3D 77 0D 34 52 D9 E2 56 C3 0D EF 63 8E B5 CB 
+Key Attributes: <No Attributes>
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIFDjBABgkqhkiG9w0BBQ0wMzAbBgkqhkiG9w0BBQwwDgQIFRkMzB/iRKYCAggA
+MBQGCCqGSIb3DQMHBAj/xwDXI6PzTwSCBMjMPT5hgnD/Sw/K4MvH3g5YijXl/FeS
+QoYwGImNmoFhtvKKm1ytQ0oh9P28YR1BHrm+Ew86OM7XLXm8a9mdLY98Q/QrY0gY
+Z7ZhMrWztyNyYWhu/9OV3sNkwNGtAi9R6qOFLIvHukY1X4ualauVUa8fsTxQdcxW
+faMrd2K4GwSKsWzmkpREgQBmpXnLW6eAD/WHGGOROMzVdUy6GOTrsUNvoqjluTEp
+H3aRMVMo8++vL8kWjpkc+cqL3RteMoNytriam+KVLOf80396+jnFRWbO/2PuQF2A
+lF2WZnamysT+tp/U5td4cwd8hGDrrwW4SFSdaquLQr7pu0L5oyO/AmjoEO+rSg2F
+mkz4n2jofTIdZ1CZh7NVYnWyroX9xakYpHpP5yoidypFZ5lg+LUoNpt+2/b3eume
+2SvdfU4rVvWpELmReqbh47dJgjXNIyv5EFfAwjJRXW4IOhnmfKUf0wLoSOdl7PQ2
+VfN5DEMC7sXfuNMRNPLf76JxYsF3/8kPVWHhjLKjBBnGWlr1AKh6fa68Ky+KNdBO
+r1da8sikBj5oF2uW52LJldK47yefGKGu/IDqISKPy6rzHnxA+HMsw8gexWlE5F27
+bYN8+0v9n5aa3Ust3kpBYQzA2wbTJagKo4ablGi2gWznYQ59kDI33XPo+iPrl5Cm
+7Lyujnl7wF98r2kNm6j9bBMNxoz91qTRlyXpDCTRvgHGhTGNFMK0kG9W+se+oDET
+XxgfqM1zLnNikI6q0aEDlnVPelmCbWZoiimd3ahSzXshRKsP+3p3LK/XfNgWxQd+
+0w929amH2J1Hi75icrzTBVabMoYlxcB941hicOzTS7ut31IgCKryFQ12T1pthuxY
+zKb1nMqGfzZhAnHXNyqEATVQPOTFCoDN8Uxo8o3YojdDGETHLnBEfsda8h0qGzjT
+Y9Kfkub4LfnGrAcodyGBcS/DB9sPwmD/ee3XSVGXpBCQLm0/v+EGc1W78lhe7x3d
+af3fXycL5jVkK168/NbNsqocrc1yrsNRLU0VQdbYt0fv1L2pWPMBIyi0sy61PQFK
+M1h54/gm9/sssxHB+el3O4NfKvaCLhryRsvEt4HBeoWg0+iMM+xQq++iDbzIJVPr
+FS8qRb9J/sZokCPcHbame0B5+tNIY6zAGXqr4O3NGk//XG8UR7zq4bpzRbxbYzoL
+rLoQvEP0ihSEA0aZHBrosDIfUNR8r9DB8/aGfqhbKSm7kUUPTHcLl4eSUMJCtllu
+iHWndanlaDZMUBSKT+yg8sCXTi0AVLYl8ZPdKEYAK5oCrve3hm5TUZO/4rCIeS/w
+GeEz77xBqwx29PAebHsVeyx6vZnIDt++jo0ON3rTjc0NGaAkrjog2Lh2oXVhRMJH
+1jogDcRJUX6D5Ak+uZObRPlZ0eo3uXsPqsjtrUIeyuHsEyFz5Zu2QYueKvlXakps
+6eI7CKqQPcJAWxS9ULCWflxdE80Y/1JwcsoLTdiXOFhLDkaWNVf99p25ezPG6kBg
+aNHFxY55XO3XWbnKSRyaipZHbaVPFpW59yupSAH/bTzDwZ+uT8G8Gjv0EyCi+4oR
+zSvpXnYHd6tKaZRPIa5Al153ch0GavjrTJSgrZIaVxClE6omwk7SVT9ctH7W8tVW
+6P8=
+-----END ENCRYPTED PRIVATE KEY-----
+[san@sandell CA-DIR]$
+
