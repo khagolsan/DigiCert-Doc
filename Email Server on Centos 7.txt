@@ -1,0 +1,229 @@
+##############################################################################
+#
+#
+# Seting up an Email Server on CentOS 7
+#
+#
+##############################################################################
+
+
+###############################################
+# 1. Install EPEL repository into system
+###############################################
+
+[root@mail ~]# yum install epel-release
+Loaded plugins: fastestmirror, langpacks
+base                                                     | 3.6 kB     00:00     
+extras                                                   | 3.4 kB     00:00     
+updates                                                  | 3.4 kB     00:00     
+Loading mirror speeds from cached hostfile
+ * base: del-mirrors.extreme-ix.org
+ * extras: del-mirrors.extreme-ix.org
+ * updates: del-mirrors.extreme-ix.org
+Resolving Dependencies
+--> Running transaction check
+---> Package epel-release.noarch 0:7-9 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch             Version         Repository        Size
+================================================================================
+Installing:
+ epel-release           noarch           7-9             extras            14 k
+
+Transaction Summary
+================================================================================
+Install  1 Package
+
+Total download size: 14 k
+Installed size: 24 k
+Is this ok [y/d/N]: y
+Downloading packages:
+epel-release-7-9.noarch.rpm                                |  14 kB   00:00     
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : epel-release-7-9.noarch                                      1/1 
+  Verifying  : epel-release-7-9.noarch                                      1/1 
+
+Installed:
+  epel-release.noarch 0:7-9                                                     
+
+Complete!
+[root@mail ~]#
+
+###############################################
+# 2. Install required packages postfix openssl dovecot squirrelmail
+###############################################
+
+[root@mail ~]# yum list postfix openssl dovecot squirrelmail
+Loaded plugins: fastestmirror, langpacks
+epel/x86_64/metalink                                     | 6.9 kB     00:00     
+epel                                                     | 4.7 kB     00:00     
+(1/3): epel/x86_64/updateinfo                              | 880 kB   00:04     
+(2/3): epel/x86_64/group_gz                                | 266 kB   00:05     
+(3/3): epel/x86_64/primary_db                              | 6.2 MB   02:20     
+Loading mirror speeds from cached hostfile
+ * base: del-mirrors.extreme-ix.org
+ * epel: mirror.vinahost.vn
+ * extras: del-mirrors.extreme-ix.org
+ * updates: del-mirrors.extreme-ix.org
+Installed Packages
+dovecot.x86_64                       1:2.2.10-7.el7                    @anaconda
+openssl.x86_64                       1:1.0.1e-60.el7                   @anaconda
+postfix.x86_64                       2:2.10.1-6.el7                    @anaconda
+Available Packages
+dovecot.i686                         1:2.2.10-8.el7                    base     
+dovecot.x86_64                       1:2.2.10-8.el7                    base     
+openssl.x86_64                       1:1.0.2k-8.el7                    base     
+squirrelmail.noarch                  1.4.22-16.el7                     epel     
+[root@mail ~]#
+
+###############################################
+# 3. Install required package squirrelmail
+###############################################
+
+[root@mail ~]# yum install -y squirrelmail
+Loaded plugins: fastestmirror, langpacks
+Loading mirror speeds from cached hostfile
+ * base: del-mirrors.extreme-ix.org
+ * epel: mirror.vinahost.vn
+ * extras: del-mirrors.extreme-ix.org
+ * updates: del-mirrors.extreme-ix.org
+Resolving Dependencies
+--> Running transaction check
+---> Package squirrelmail.noarch 0:1.4.22-16.el7 will be installed
+--> Processing Dependency: mod_php for package: squirrelmail-1.4.22-16.el7.noarch
+--> Processing Dependency: php-mbstring for package: squirrelmail-1.4.22-16.el7.noarch
+--> Processing Dependency: tmpwatch for package: squirrelmail-1.4.22-16.el7.noarch
+--> Running transaction check
+---> Package php.x86_64 0:5.4.16-43.el7_4 will be installed
+--> Processing Dependency: php-common(x86-64) = 5.4.16-43.el7_4 for package: php-5.4.16-43.el7_4.x86_64
+--> Processing Dependency: php-cli(x86-64) = 5.4.16-43.el7_4 for package: php-5.4.16-43.el7_4.x86_64
+--> Processing Dependency: libcrypto.so.10(OPENSSL_1.0.2)(64bit) for package: php-5.4.16-43.el7_4.x86_64
+---> Package php-mbstring.x86_64 0:5.4.16-43.el7_4 will be installed
+---> Package tmpwatch.x86_64 0:2.11-5.el7 will be installed
+--> Running transaction check
+---> Package openssl-libs.x86_64 1:1.0.1e-60.el7 will be updated
+--> Processing Dependency: openssl-libs(x86-64) = 1:1.0.1e-60.el7 for package: 1:openssl-1.0.1e-60.el7.x86_64
+---> Package openssl-libs.x86_64 1:1.0.2k-8.el7 will be an update
+---> Package php-cli.x86_64 0:5.4.16-43.el7_4 will be installed
+---> Package php-common.x86_64 0:5.4.16-43.el7_4 will be installed
+--> Processing Dependency: libzip.so.2()(64bit) for package: php-common-5.4.16-43.el7_4.x86_64
+--> Running transaction check
+---> Package libzip.x86_64 0:0.10.1-8.el7 will be installed
+---> Package openssl.x86_64 1:1.0.1e-60.el7 will be updated
+---> Package openssl.x86_64 1:1.0.2k-8.el7 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package             Arch          Version                 Repository      Size
+================================================================================
+Installing:
+ squirrelmail        noarch        1.4.22-16.el7           epel           3.7 M
+Installing for dependencies:
+ libzip              x86_64        0.10.1-8.el7            base            48 k
+ php                 x86_64        5.4.16-43.el7_4         updates        1.4 M
+ php-cli             x86_64        5.4.16-43.el7_4         updates        2.7 M
+ php-common          x86_64        5.4.16-43.el7_4         updates        565 k
+ php-mbstring        x86_64        5.4.16-43.el7_4         updates        505 k
+ tmpwatch            x86_64        2.11-5.el7              base            38 k
+Updating for dependencies:
+ openssl             x86_64        1:1.0.2k-8.el7          base           492 k
+ openssl-libs        x86_64        1:1.0.2k-8.el7          base           1.2 M
+
+Transaction Summary
+================================================================================
+Install  1 Package  (+6 Dependent packages)
+Upgrade             ( 2 Dependent packages)
+
+Total size: 11 M
+Total download size: 8.9 M
+Downloading packages:
+(1/7): libzip-0.10.1-8.el7.x86_64.rpm                      |  48 kB   00:01     
+(2/7): php-common-5.4.16-43.el7_4.x86_64.rpm               | 565 kB   00:02     
+(3/7): tmpwatch-2.11-5.el7.x86_64.rpm                      |  38 kB   00:00     
+(4/7): php-mbstring-5.4.16-43.el7_4.x86_64.rpm             | 505 kB   00:05     
+(5/7): php-5.4.16-43.el7_4.x86_64.rpm                      | 1.4 MB   00:05     
+(6/7): php-cli-5.4.16-43.el7_4.x86_64.rpm                  | 2.7 MB   00:11     
+warning: /var/cache/yum/x86_64/7/epel/packages/squirrelmail-1.4.22-16.el7.noarch.rpm: Header V3 RSA/SHA256 Signature, key ID 352c64e5: NOKEY
+Public key for squirrelmail-1.4.22-16.el7.noarch.rpm is not installed
+(7/7): squirrelmail-1.4.22-16.el7.noarch.rpm               | 3.7 MB   01:14     
+--------------------------------------------------------------------------------
+Total                                              120 kB/s | 8.9 MB  01:16     
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+Importing GPG key 0x352C64E5:
+ Userid     : "Fedora EPEL (7) <epel@fedoraproject.org>"
+ Fingerprint: 91e9 7d7c 4a5e 96f1 7f3e 888f 6a2f aea2 352c 64e5
+ Package    : epel-release-7-9.noarch (@extras)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Updating   : 1:openssl-libs-1.0.2k-8.el7.x86_64                          1/11 
+  Installing : libzip-0.10.1-8.el7.x86_64                                  2/11 
+  Installing : php-common-5.4.16-43.el7_4.x86_64                           3/11 
+  Installing : php-cli-5.4.16-43.el7_4.x86_64                              4/11 
+  Installing : php-5.4.16-43.el7_4.x86_64                                  5/11 
+  Installing : php-mbstring-5.4.16-43.el7_4.x86_64                         6/11 
+  Installing : tmpwatch-2.11-5.el7.x86_64                                  7/11 
+  Installing : squirrelmail-1.4.22-16.el7.noarch                           8/11 
+  Updating   : 1:openssl-1.0.2k-8.el7.x86_64                               9/11 
+  Cleanup    : 1:openssl-1.0.1e-60.el7.x86_64                             10/11 
+  Cleanup    : 1:openssl-libs-1.0.1e-60.el7.x86_64                        11/11 
+  Verifying  : php-cli-5.4.16-43.el7_4.x86_64                              1/11 
+  Verifying  : php-5.4.16-43.el7_4.x86_64                                  2/11 
+  Verifying  : php-common-5.4.16-43.el7_4.x86_64                           3/11 
+  Verifying  : squirrelmail-1.4.22-16.el7.noarch                           4/11 
+  Verifying  : 1:openssl-libs-1.0.2k-8.el7.x86_64                          5/11 
+  Verifying  : tmpwatch-2.11-5.el7.x86_64                                  6/11 
+  Verifying  : libzip-0.10.1-8.el7.x86_64                                  7/11 
+  Verifying  : 1:openssl-1.0.2k-8.el7.x86_64                               8/11 
+  Verifying  : php-mbstring-5.4.16-43.el7_4.x86_64                         9/11 
+  Verifying  : 1:openssl-libs-1.0.1e-60.el7.x86_64                        10/11 
+  Verifying  : 1:openssl-1.0.1e-60.el7.x86_64                             11/11 
+
+Installed:
+  squirrelmail.noarch 0:1.4.22-16.el7                                           
+
+Dependency Installed:
+  libzip.x86_64 0:0.10.1-8.el7            php.x86_64 0:5.4.16-43.el7_4         
+  php-cli.x86_64 0:5.4.16-43.el7_4        php-common.x86_64 0:5.4.16-43.el7_4  
+  php-mbstring.x86_64 0:5.4.16-43.el7_4   tmpwatch.x86_64 0:2.11-5.el7         
+
+Dependency Updated:
+  openssl.x86_64 1:1.0.2k-8.el7        openssl-libs.x86_64 1:1.0.2k-8.el7       
+
+Complete!
+[root@mail ~]# 
+
+
+###############################################
+# 4. Make a MX entry of server in DNS
+###############################################
+
+    Type   Host    Destination             Priority   TTL
+    MX     @       mail.yourdomain.com     10         3600
+    A      mail    192.168.0.1                        3600
+
+###############################################
+# 5. Configure postfix,dovecot, httpd, mod_ssl, php, squirrelmail etc.
+###############################################
+
+Use URL
+
+https://www.server-world.info/en/note?os=CentOS_7&p=httpd&f=21
+
+Note: Some plugin options for squirrelmail given in above URL, are not available and hence ignored.
+
+[root@mail config]# systemctl restart httpd
+[root@mail config]# setsebool -P httpd_can_network_connect on 
+[root@mail config]#
+
+
